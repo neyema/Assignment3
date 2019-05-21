@@ -1,4 +1,6 @@
 
+STKSIZE equ 16*1024
+
 ;global!!!! array of co-routines so we can execute them in round-robin
 section .data
 numofDrones: dd 0  ;num of drones
@@ -35,6 +37,8 @@ initCORS:
   mov eax, [numofDrones]
   add dword eax, [numofDrones]  ;eax=numofDrones*2
   add dword eax, eax  ;eax=numofDrones*4
+  ;eax<-munOfDrones*(STKSIZE+8)
+  push eax
   call malloc
 
   ;initialize threads and their states
