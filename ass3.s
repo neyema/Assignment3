@@ -1,6 +1,7 @@
 
 ;global!!!! array of co-routines so we can execute them in round-robin
 section .data
+dronesMayDestroyHelper: dd 0
 dronesRandRetHelper: dd 0
 dronesRandAngleF: dt 0
 dronesRandDistance: dt 0
