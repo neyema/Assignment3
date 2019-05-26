@@ -1,6 +1,11 @@
 
 ;global!!!! array of co-routines so we can execute them in round-robin
 section .data
+dronesRandRetHelper: dd 0
+dronesRandAngleF: dt 0
+dronesRandDistance: dt 0
+dronesRandHelper: dt 0
+randStartState: dd 0xACE1u   ;random start state
 numofDrones: dd 0  ;num of drones
 numofTargets: dd 0  ;num of targets needed to destroy to win
 K: dd 0  ;num of drone steps between broad printing
