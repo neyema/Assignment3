@@ -1,3 +1,7 @@
+section .text
+  align 16
+  global drone_routine
+
 ;Generates rand number between 1 and max int
 generate_rand:
   mov eax, [seed]   ;eax is lfsr
@@ -204,3 +208,53 @@ drone_routine: ;the code for drone co-routine
     jmp quit
   .end:
   call resume
+
+  ;returns dword 0 or 1 in the stack
+  mayDestroy:
+    ;TODO: GET RID OF THE ASSUMPTIONS!
+    ;assumes pointer to X is in ebx
+    ;assumes pointer to Y is in ecx
+    ;assumes pointer to X of target in edx
+    ;assumes pointer to Y of target in esi
+    finit
+    fild dword [ecx]
+    fsub dword [esi]
+    fild dword [ebx]
+    fsub dword [edx]
+    ;in st0: x2-x1, in st1: y2-y1
+    fpatan
+    fstp [mayDestroyGamma]
+    ;assumes that pointer to alpha in eax
+    fild dword [eax]
+    fsub dword [mayDestroyGamma]
+    fabs st0
+    fild dword [beta]
+    ucomiss st1, st0
+    ja .otherCond
+    jmp .retFalse
+    .otherCond:
+    fild dword [ecx]
+    fsub dword [esi]
+    fild dword[ecx]
+    fsub dword [esi]
+    fmulp
+    fild dword [ebx]
+    fsub dword [edx]
+    fild dword [ebx]
+    fsub dword [edx]
+    fmulp
+    ;in st0: (x2-x1)^2, in st1: (y2-y1)^2
+    faddp
+    fsqrt
+    fild dword [d]
+    ucomiss st1, st0
+    ja .retTrue
+    jmp .retFalse
+    .retTrue:
+    mov eax, 1
+    push eax
+    ret
+    .retFalse:
+    mov eax, 0
+    push eax
+    ret
