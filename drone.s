@@ -2,43 +2,17 @@ section .text
   align 16
   global drone_routine
 
-;Generates rand number between 1 and max int
-generate_rand:
-  mov eax, [seed]   ;eax is lfsr
-  mov ebx, 0    ;bit will be in bx
-  mov esi, 0    ;period will be in esi
-  .doLoop:
-  ;calculate bit
-  mov ebx, eax
-  shr ebx, 0
-  mov edx, eax
-  shr edx, 2
-  xor ebx, edx
-  mov edx, eax
-  shr edx, 3
-  xor ebx, edx
-  mov edx, eax
-  shr edx, 5
-  xor ebx, edx
-  ;calculate lfsr
-  mov ecx, eax
-  shr ecx, 1
-  mov edx, ebx
-  shl ebx, 15
-  or ecx, edx
-  mov ecx, eax
-  add esi, 1
-  cmp eax, [seed]
-  jne .doLoop
-  push esi ;push period to return it
-  ret
-
 ;destorys the target
 destroyTarget:
 
   ret
 
 drone_routine: ;the code for drone co-routine
+  pop [dronesId]
+  pop [dronesDestroyedTargets]
+  pop [dronesAlpha]
+  pop [dronesY]
+  pop [dronesX]
   pushad
   pushfd
   call generate_rand
@@ -72,7 +46,7 @@ drone_routine: ;the code for drone co-routine
   fmul [esp]          ;to get [0, 50]
   pop eax
   fstp [dronesRandDistance]
-  ;assumes that pointer to old alpha is on eax for now
+  mov eax, dronesAlpha ;pointer to old alpha is on eax for now
   ;make new alpha in [0,360]
   fild [dronesRandAngleF]
   fadd dword [eax]
@@ -99,11 +73,10 @@ drone_routine: ;the code for drone co-routine
     pop esi
     jmp .angleIsCool
   .angleIsCool:
-    fstp [dronesRandAngleF]   ;new alpha in this label
-    ;mov [dronesRandAngleF] into alpha (update it)
+    fstp [dronesAlpha]   ;new alpha in this label
     ;calculate dx and dy
-    ;assumes that pointer to x is in ebx
-    ;assumes that pointer to y is in ecx
+    mov ebx, dronesX
+    mov ecx, dronesY
     fild [dronesRandAngleF]
     fcos st0
     fild [dronesRandDistance]
@@ -111,7 +84,6 @@ drone_routine: ;the code for drone co-routine
     fild [ebx]
     fadd st0, st1   ;new_x=dx+old_x
     fstp esi       ;clean junk
-    ;assumes that pointer to old x is in ebx
     ;in fstack we got old_x+something, can be over 100 or below 0 (can it be below 0? nvm)
     ;make sure that new x is in [0,100]
     push 100
@@ -141,7 +113,7 @@ drone_routine: ;the code for drone co-routine
       pop eax
     .xIsOk:
     fstp eax   ;clean junk
-    ;fstp [x]     ;TODO: UNCOMMET IT. updates x!
+    fstp [dronesX]     ;updates x!
     fild [dronesRandAngleF]
     fsin st0
     fild [dronesRandDistance]
@@ -178,7 +150,7 @@ drone_routine: ;the code for drone co-routine
       pop eax
     .yIsOk:
     fstp eax   ;clean junk
-    ;fstp [y]     ;TODO: UCOMMENT IT. updates y!
+    fstp [dronesY]     ;updates y!
   pushad
   pushfd
   call mayDestroy
@@ -188,6 +160,7 @@ drone_routine: ;the code for drone co-routine
   cmp dword [dronesMayDestroyHelper], 0
   je .end
   ;destroy the target
+  add dword [dronesDestroyedTargets]
   pushad
   pushfd
   call destroyTarget
@@ -196,7 +169,12 @@ drone_routine: ;the code for drone co-routine
   ;assumes that number of destroyed targets for this drone in eax
   cmp eax, [numofTargets]
   jge .win
-  jmp .end
+  push dword [dronesX] ;x
+  push dword [dronesY] ;y
+  push dword [dronesAlpha]
+  push dword [dronesDestroyedTargets]
+  push dword [dronesId]
+  call target_routine
   .win:
     ;wow!!! you won!!!!
     ;assumes that id in eax
@@ -207,15 +185,22 @@ drone_routine: ;the code for drone co-routine
     pop eax
     jmp quit
   .end:
+  push dword [dronesX] ;x
+  push dword [dronesY] ;y
+  push dword [dronesAlpha]
+  push dword [dronesDestroyedTargets]
+  push dword [dronesId]
   call resume
 
   ;returns dword 0 or 1 in the stack
   mayDestroy:
     ;TODO: GET RID OF THE ASSUMPTIONS!
-    ;assumes pointer to X is in ebx
-    ;assumes pointer to Y is in ecx
     ;assumes pointer to X of target in edx
     ;assumes pointer to Y of target in esi
+    mov ebx, [dronesX]
+    mov ecx, [dronesY]
+    mov edx, []
+    mov esi, []
     finit
     fild dword [ecx]
     fsub dword [esi]

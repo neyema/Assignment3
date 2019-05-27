@@ -5,7 +5,6 @@ section .text
   global scheduler_routine
   extern CORS
 
-
 scheduler_routine:
 
 
