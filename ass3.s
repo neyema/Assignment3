@@ -1,10 +1,11 @@
 STKSZ EQU 16*1024
-;stack looks like (from lowest): angle, x, y, id, ...
+;stack looks like (from lowest): x, y, angle, numOfDestTargets, id, ...
 COSZ EQU STKSZ+8
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
-
+  printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
+  printDroneFormat: db "%d,%.2f,%.2f,%.2f,%d"  ;id,x,y,alpha,destoyedTargets
 section .bss
   curr: resd 1
   SPT: resd 1
@@ -18,6 +19,14 @@ section .data
   dronesRandAngleF: dt 0
   dronesRandDistance: dt 0
   dronesRandHelper: dt 0
+  dronesAlpha: dt 0
+  dronesX: dd 0
+  dronesY: dd 0
+  dronesDestroyedTargets: dd 0
+  dronesId: dd 0
+  targetRandHelper: dd 0
+  targetX: dd 0
+  targetY: dd 0
   numofDrones: dd 0  ;num of drones
   numofTargets: dd 0  ;num of targets needed to destroy to win
   K: dd 0  ;num of drone steps between broad printing
@@ -60,14 +69,16 @@ main:
 
   mov ecx, 0
 initCORS:
+  ;TODO: FIRST, INIT TARGET
   mov eax, [COSZ*ecx + CORS] ; get pointer to COi (i=ecx) struct
   mov dword [eax], drone_routine  ;pointer to function
   mov dword [eax+4], eax+8+STKSZ  ;stack pointer initialized to end of stack
   mov [SPT], esp
   mov esp, [eax+4]
-  push 0 ;angle TODO: change to random [0,360]
   push 0 ;x TODO: change to random
   push 0 ;y
+  push 0 ;angle TODO: change to random [0,360]
+  push 0 ;number of destoryed targets
   push ecx  ;drone-id
   cmp ecx, [numofDrones]
   jl initCORS
@@ -95,6 +106,37 @@ startCo:
   mov EBX, [EBP+8]; gets ID of a scheduler co-routine
   mov EBX, [EBX*4 + CORS]; gets a pointer to a scheduler struct
   jmp do_resume
+
+;Generates rand number between 1 and max int
+generate_rand:
+  mov eax, [seed]   ;eax is lfsr
+  mov ebx, 0    ;bit will be in bx
+  mov esi, 0    ;period will be in esi
+  .doLoop:
+    ;calculate bit
+    mov ebx, eax
+    shr ebx, 0
+    mov edx, eax
+    shr edx, 2
+    xor ebx, edx
+    mov edx, eax
+    shr edx, 3
+    xor ebx, edx
+    mov edx, eax
+    shr edx, 5
+    xor ebx, edx
+    ;calculate lfsr
+    mov ecx, eax
+    shr ecx, 1
+    mov edx, ebx
+    shl ebx, 15
+    or ecx, edx
+    mov ecx, eax
+    add esi, 1
+    cmp eax, [seed]
+    jne .doLoop
+  push esi ;push period to return it
+  ret
 
 ;free all and exit
 quit:
