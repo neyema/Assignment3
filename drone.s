@@ -29,14 +29,8 @@ generate_rand:
   push esi ;push period to return it
   ret
 
-;returns dword 0 or 1 in the stack
-mayDestroy:
-  ;needs Y, X and alpha somehow
-  ;assumes pointer to alpha is in eax
-  ;assumes pointer to X is in ebx
-  ;assumes pointer to Y is in ecx
-  ;assumes pointer to X of target in edx
-  ;assumes pointer to Y of target in esi
+;destorys the target
+destroyTarget:
 
   ret
 
@@ -73,10 +67,9 @@ drone_routine: ;the code for drone co-routine
   push 50
   fmul [esp]          ;to get [0, 50]
   pop eax
-  ;pop value into dronesRandDistance
   fstp [dronesRandDistance]
-  ;TODO: get alpha to eax
   ;assumes that pointer to old alpha is on eax for now
+  ;make new alpha in [0,360]
   fild [dronesRandAngleF]
   fadd dword [eax]
   push 360
@@ -113,24 +106,101 @@ drone_routine: ;the code for drone co-routine
     fmul st0, st1   ;dx=d*cos(alpha)
     fild [ebx]
     fadd st0, st1   ;new_x=dx+old_x
+    fstp esi       ;clean junk
+    ;assumes that pointer to old x is in ebx
+    ;in fstack we got old_x+something, can be over 100 or below 0 (can it be below 0? nvm)
+    ;make sure that new x is in [0,100]
+    push 100
+    fild [esp]
+    pop eax   ;clean stack
+    ucomiss st1, st0
+    jb .xBiggerThan100
+    fstp eax
+    push 0
+    fild [esp]
+    pop eax    ;clean stack
+    ucomiss st1, st0
+    ja .xLowerThan0
+    jmp .xIsOk
+    .xBiggerThan100:
+      fstp eax
+      push 100
+      fisub [esp]
+      fild [esp]
+      pop eax
+      jmp .xIsOk
+    .xLowerThan0:
+      fstp eax
+      push 100
+      fiadd [esp]
+      fild [esp]
+      pop eax
+    .xIsOk:
+    fstp eax   ;clean junk
     ;fstp [x]     ;TODO: UNCOMMET IT. updates x!
-    finit
     fild [dronesRandAngleF]
     fsin st0
     fild [dronesRandDistance]
     fmul st0, st1   ;dy=d*sin(alpha)
     fild [ecx]
     fadd st0, st1    ;new_y=dy+old_y
+    fstp esi       ;clean junk
+    ;in fstack we got old_y+something, can be over 100 or below 0 (can it be below 0? nvm)
+    ;make sure that new y is in [0,100]
+    push 100
+    fild [esp]
+    pop eax   ;clean stack
+    ucomiss st1, st0
+    jb .yBiggerThan100
+    fstp eax
+    push 0
+    fild [esp]
+    pop eax    ;clean stack
+    ucomiss st1, st0
+    ja .yLowerThan0
+    jmp .yIsOk
+    .yBiggerThan100:
+      fstp eax
+      push 100
+      fisub [esp]
+      fild [esp]
+      pop eax
+      jmp .yIsOk
+    .yLowerThan0:
+      fstp eax
+      push 100
+      fiadd [esp]
+      fild [esp]
+      pop eax
+    .yIsOk:
+    fstp eax   ;clean junk
     ;fstp [y]     ;TODO: UCOMMENT IT. updates y!
-    ;TODO: fix overflow/undeflow X/Y
   pushad
   pushfd
   call mayDestroy
   pop dword [dronesMayDestroyHelper]
   popfd
-  popfd
+  popad
   cmp dword [dronesMayDestroyHelper], 0
   je .end
-  ;TODO: HERE, destroy the targetttt, check if there's a win and finish if theere is
+  ;destroy the target
+  pushad
+  pushfd
+  call destroyTarget
+  popfd
+  popad
+  ;assumes that number of destroyed targets for this drone in eax
+  cmp eax, [numofTargets]
+  jge .win
+  jmp .end
+  .win:
+    ;wow!!! you won!!!!
+    ;assumes that id in eax
+    push eax
+    push winnerFormat
+    call printf
+    add esp, 4
+    pop eax
+    jmp quit
   .end:
-  ;call resume
+  call resume
