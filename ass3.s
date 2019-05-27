@@ -1,5 +1,5 @@
 STKSZ EQU 16*1024
-;stack looks like (from lowest): angle, x, y, id, ...
+;stack co-drone looks like (from lowest): angle, x, y, id, ...
 COSZ EQU STKSZ+8
 
 section .rodata
@@ -7,10 +7,9 @@ section .rodata
 
 section .bss
   curr: resd 1
-  SPT: resd 1
-  SPMAIN: resd 1
+  SPT: resd 1  ;4 bytes, temporary stack pointer
+  SPMAIN: resd 1  ;stack pointer of main, when back from scheduler
 
-;global!!!! array of co-routines so we can execute them in round-robin
 section .data
   mayDestroyGamma: dd 0
   dronesMayDestroyHelper: dd 0
@@ -24,33 +23,55 @@ section .data
   beta: dd 0  ;the angle of drone field-of-view
   d: dd 0  ;maximum distance that allows to destroy a target
   seed: dd 0
+  schedulerCO: rebs COSZ ;private stack and 2 fields: pointer to function, spi
   CORS: dd 0  ;address to the array of co-routines
 
 section .text
   align 16
   global CORS
-  extern malloc
+  global SPT
+  global SPMAIN
+  extern do_resume
   ;extern drone_routine
   ;extern target_routine
+  ;extern scheduler_routine
+  ;C library functions
+  extern malloc
+  extern sscanf
 
 main:
   push ebp
   mov ebp, esp
-  add ebp, 8 ;discard argc and argv[0]
-  ;;sscanf
-  mov eax, [ebp]
-  mov dword [numofDrones], eax
-  mov dword eax, [ebp+4]
-  mov dword [numofTargets], eax
-  mov dword eax, [ebp+8]
-  mov dword [K], eax
-  mov dword eax, [ebp+12]
-  mov dword [beta], eax
-  mov dword eax, [ebp+16]
-  mov dword [d], eax
-  mov dword eax, [ebp+20]
-  mov dword [seed], eax
+  add esp, 8 ;discard argc and argv[0]
+  ;;scanf
+  mov eax, esp
+  ;push the argument in opposite order
+  push numofDrones
+  push "%d "
+  push esp
+  call sscanf
+  push numofTargets
+  push "%d "
+  push esp+4
+  call sscanf
+  push K
+  push "%d "
+  push esp+4
+  call sscanf
+  push beta
+  push "%d "
+  push esp+4
+  call sscanf
+  push d
+  push "%d "
+  push esp+4
+  call sscanf
+  push seed
+  push "%d "
+  push esp+4
+  call sscanf
 
+  ;malloc CORS
   mov eax, [numofDrones]
   ;eax-<eax*(STKSZ+8)
   mov eax, eax*(STKSZ+8)
@@ -64,37 +85,40 @@ initCORS:
   mov dword [eax], drone_routine  ;pointer to function
   mov dword [eax+4], eax+8+STKSZ  ;stack pointer initialized to end of stack
   mov [SPT], esp
-  mov esp, [eax+4]
+  mov dword esp, [eax+4]
   push 0 ;angle TODO: change to random [0,360]
   push 0 ;x TODO: change to random
   push 0 ;y
   push ecx  ;drone-id
   cmp ecx, [numofDrones]
   jl initCORS
-  ;initialize threads and their states
 
-  ;initialize scheduler, can be static
-  ;his size is: his private stack and 2 fields: pointer to function, spi.
-  ;call the scheduler, no need to context-switch
+initScheduler:
+  mov dword [schedulerCO], scheduler_routine  ;pointer to function
+  mov dword [schedulerCO+4], schedulerCO+COSZ ;stack pointer initialized to end of stack
+  mov [SPT], esp
+  mov dword esp, [schedulerCO+4]
+  push ecx  ;drone-id
 
-initCo:  ;in ecx the id of the drone
-  mov ebx, [ebp+8] ; get co-routine ID number
-  mov ebx, [4*ebx + CORS] ; get pointer to COi struct
-  mov eax, [ebx+CODEP] ; get initial EIP value – pointer to COi function
-  mov [SPT], ESP ; save ESP value
-  mov esp, [EBX+SPP] ; get initial ESP value – pointer to COi stack
-  push eax ; push initial “return” address
-  pushfd ; push flags
-  pushad ; push all other registers
-  mov [ebx+SPP], esp ; save new SPi value (after all the pushes)
-  mov ESP, [SPT]
-
-startCo:
+  ;start scheduler
   pushad; save registers of main ()
   mov [SPMAIN], ESP; save ESP of main ()
-  mov EBX, [EBP+8]; gets ID of a scheduler co-routine
-  mov EBX, [EBX*4 + CORS]; gets a pointer to a scheduler struct
-  jmp do_resume
+  mov ebx, [schedulerCO]; gets a pointer to a scheduler struct
+  call startScheduler
+  mov ESP, [SPMAIN]  ; restore ESP of main()popad; restore registers of main()
+
+resume:; save state of current co-routine
+  pushfd
+  pushad
+  mov edx, [CURR]
+  mov dword [edx+4], ESP  ;save current ESP
+
+do_resume: ; load ESP for resumed co-routine
+  mov esp, [ebx+4]
+  mov [CURR], ebx
+  popad; restore resumed co-routine state
+  popfd
+  ret; "return" to resumed co-routine
 
 ;free all and exit
 quit:
