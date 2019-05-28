@@ -12,6 +12,8 @@ section .text
   extern COSZ
   extern K
   extern N
+  extern printerCO
+  extern endCo
 
 section .data
   idCURR: dd 1  ;1->N
@@ -21,8 +23,12 @@ scheduler_routine:
   mov eax, [N]
   cmp [idCURR], eax
   je first_drone
-  add [idCURR], 1
-  mov ebx, [CORS+idCURR*COSZ]
+  add dword [idCURR], 1
+  mov eax, COSZ
+  mov ebx, [idCURR]
+  mul ebx  ;eax<-idCURR*COSZ
+  add eax, CORS
+  mov ebx, eax
   call resume
   jmp after_droneroutine
   first_drone:
@@ -31,15 +37,25 @@ scheduler_routine:
     jmp after_droneroutine  ;so that the drone will get to that code
 
 after_droneroutine:
-  ;print the board
+  mov eax, [steps]
+  cmp eax, [K]
+  je printBoard
+  add [steps], 1
+  jmp drone_won
+printBoard:
+  mov [steps], 0
   mov ebx, printerCO
   call resume
-  jmp scheduler_routine
-  ;check if this drone won
-  mov eax, eax*COSZ  ;change these 2 lines to mov eax, [CORS+eax*COSZ]
-  add eax, [CORS]
+
+;check if this drone won
+drone_won:
+  mov eax, [idCURR]
+  mov ebx, COSZ
+  mul ebx
+  add eax, [CORS] ;eax<-CORS+idCURR*COSZ
   add eax, 4 ;stack pointer
   add eax, 12 ;discard x,y,angle
   mov eax, [eax]
   cmp dword eax, [K]
   jge endCo
+  jmp drone_routine

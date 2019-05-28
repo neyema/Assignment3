@@ -1,6 +1,8 @@
+
+  global drone_routine
+
 section .text
   align 16
-  global drone_routine
 
 ;destorys the target
 destroyTarget:
@@ -191,6 +193,7 @@ drone_routine: ;the code for drone co-routine
   push dword [dronesId]
   mov ebx, schedulerCO
   call resume
+  jmp drone_routine  ;this is the return address
 
   ;returns dword 0 or 1 in the stack
   mayDestroy:

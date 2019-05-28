@@ -21,4 +21,6 @@ printer_routine:
     add ecx, 1
     cmp ecx, dword [numofDrones]
     jl .printDrone
-  ret
+  mov ebx, schedulerCO
+  call resume
+  jmp printer_routine
