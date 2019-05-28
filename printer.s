@@ -12,6 +12,7 @@ printer_routine:
     add eax, 4                 ;eax is the pointer to the stack
     push dword [eax + 8]   ;dronesDestroyedTargets
     push dword [eax + 12]   ;alpha
+    ;TODO: convert from radians to degrees
     push dword [eax + 16]    ;y
     push dword [eax + 20]    ;x
     push dword [eax + 4]   ;id

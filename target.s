@@ -34,4 +34,5 @@ createTarget:
 
 target_routine:
   call createTarget
+  mov ebx, [schedulerCO]
   call resume

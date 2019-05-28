@@ -4,7 +4,6 @@ section .text
 
 ;destorys the target
 destroyTarget:
-
   ret
 
 drone_routine: ;the code for drone co-routine
@@ -190,6 +189,7 @@ drone_routine: ;the code for drone co-routine
   push dword [dronesAlpha]
   push dword [dronesDestroyedTargets]
   push dword [dronesId]
+  mov ebx, schedulerCO
   call resume
 
   ;returns dword 0 or 1 in the stack

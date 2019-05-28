@@ -1,24 +1,40 @@
-STKSZ EQU 16*1024
-;stack looks like (from lowest): x, y, angle, numOfDestTargets, id, ...
-COSZ EQU STKSZ+8
+global CORS
+global SPT
+global SPMAIN
+
+section .text
+  align 16
+  extern drone_routine
+  extern target_routine
+  extern scheduler_routine
+  ;C library functions
+  extern malloc
+  extern sscanf
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
   printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
   printDroneFormat: db "%d,%.2f,%.2f,%.2f,%d"  ;id,x,y,alpha,destoyedTargets
+
 section .bss
-  curr: resd 1
+  STKSZ EQU 16*1024
+  ;stack looks like (from highest): x, y, angle, numOfDestTargets ...
+  COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
+  CURR: resd 1
   SPT: resd 1  ;4 bytes, temporary stack pointer
   SPMAIN: resd 1  ;stack pointer of main, when back from scheduler
+  schedulerCO: resb COSZ
+  printerCO: resb COSZ
+  targetCO: resb COSZ
 
 section .data
   mayDestroyGamma: dd 0
   dronesMayDestroyHelper: dd 0
   dronesRandRetHelper: dd 0
-  dronesRandAngleF: dt 0
-  dronesRandDistance: dt 0
-  dronesRandHelper: dt 0
-  dronesAlpha: dt 0
+  dronesRandAngleF: dt 0.0
+  dronesRandDistance: dt 0.0
+  dronesRandHelper: dt 0.0
+  dronesAlpha: dt 0.0
   dronesX: dd 0
   dronesY: dd 0
   dronesDestroyedTargets: dd 0
@@ -32,22 +48,9 @@ section .data
   beta: dd 0  ;the angle of drone field-of-view
   d: dd 0  ;maximum distance that allows to destroy a target
   seed: dd 0
-  schedulerCO: rebs COSZ ;private stack and 2 fields: pointer to function, spi
   CORS: dd 0  ;address to the array of co-routines
 
 section .text
-  align 16
-  global CORS
-  global SPT
-  global SPMAIN
-  extern do_resume
-  ;extern drone_routine
-  ;extern target_routine
-  ;extern scheduler_routine
-  ;C library functions
-  extern malloc
-  extern sscanf
-
 main:
   push ebp
   mov ebp, esp
@@ -61,75 +64,93 @@ main:
   call sscanf
   push numofTargets
   push "%d "
-  push esp+4
+  add esp, 4
+  push esp
   call sscanf
   push K
   push "%d "
-  push esp+4
+  add esp, 4
+  push esp
   call sscanf
   push beta
   push "%d "
-  push esp+4
+  add esp, 4
+  push esp
   call sscanf
   push d
   push "%d "
-  push esp+4
+  add esp, 4
+  push esp
   call sscanf
   push seed
   push "%d "
-  push esp+4
+  add esp, 4
+  push esp
   call sscanf
 
-  ;malloc CORS
+  ;allocating size for CORS
   mov eax, [numofDrones]
-  ;eax-<eax*(STKSZ+8)
-  mov eax, eax*(STKSZ+8)
+  mov ebx, COSZ
+  mul ebx  ;eax<-COSZ*numofDrones
   push eax
   call malloc
-  mov [CORS], eax
+  mov [CORS], eax  ;the pointer returned by malloc
 
-  mov ecx, 0
+  mov ecx, 1  ;drone id is 1 to N
 initCORS:
   ;TODO: FIRST, INIT TARGET
-  mov eax, [COSZ*ecx + CORS] ; get pointer to COi (i=ecx) struct
-  mov dword [eax], drone_routine  ;pointer to function
-  mov dword [eax+4], eax+8+STKSZ  ;stack pointer initialized to end of stack
+  mov ebx, [CORS]
+  sub ecx, 1
+  mov eax, COSZ
+  mul ecx  ;ecx<-COSZ*(ecx-1)
+  add ebx, ecx  ;get pointer to COi (i=ecx-1) struct
+  mov dword [ebx], drone_routine  ;pointer to function
+  add eax, COSZ
+  mov dword [eax+4], eax  ;stack pointer initialized to end of stack
   mov [SPT], esp
-  mov dword esp, [eax+4]
+  mov dword esp, [ebx+4]
+  ;push ecx  ;drone-id
   push 0 ;x TODO: change to random
   push 0 ;y
   push 0 ;angle TODO: change to random [0,360]
   push 0 ;number of destoryed targets
-  push ecx  ;drone-id
   cmp ecx, [numofDrones]
-  jl initCORS
+  add ecx, 1
+  jle initCORS
 
 initScheduler:
   mov dword [schedulerCO], scheduler_routine  ;pointer to function
   mov dword [schedulerCO+4], schedulerCO+COSZ ;stack pointer initialized to end of stack
   mov [SPT], esp
   mov dword esp, [schedulerCO+4]
-  push ecx  ;drone-id
 
   ;start scheduler
   pushad; save registers of main ()
   mov [SPMAIN], ESP; save ESP of main ()
-  mov ebx, [schedulerCO]; gets a pointer to a scheduler struct
-  call startScheduler
-  mov ESP, [SPMAIN]  ; restore ESP of main()popad; restore registers of main()
+  mov ebx, schedulerCO; gets a pointer to a scheduler struct
+  jmp do_resume
 
-resume:; save state of current co-routine
+endCo:
+  mov ESP, [SPMAIN]  ; restore ESP of main()
+  popad; restore registers of main()
+
+;the inveriant that helps the resume-do_resume method is:
+;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
+;return address can be to the line 'jmp drone_routine'
+resume: ;save state of current co-routine
+  push dword [ebx]  ;pointer to function
   pushfd
   pushad
   mov edx, [CURR]
   mov dword [edx+4], ESP  ;save current ESP
 
-do_resume: ; load ESP for resumed co-routine
+do_resume: ;load ESP for resumed co-routine
   mov esp, [ebx+4]
   mov [CURR], ebx
-  popad; restore resumed co-routine state
+  popad ;restore resumed co-routine state
   popfd
-  ret; "return" to resumed co-routine
+  ret  ;"return" to resumed co-routine
+  ;this will pop the address to the function and jmp there
 
 ;Generates rand number between 1 and max int
 generate_rand:
