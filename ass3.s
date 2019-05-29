@@ -10,7 +10,7 @@ section .text
   ;C library functions
   extern malloc
   extern sscanf
-
+  global generate_rand
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
   printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
@@ -28,18 +28,6 @@ section .bss
   targetCO: resb COSZ
 
 section .data
-  mayDestroyGamma: dd 0
-  dronesMayDestroyHelper: dd 0
-  dronesRandRetHelper: dd 0
-  dronesRandAngleF: dt 0.0
-  dronesRandDistance: dt 0.0
-  dronesRandHelper: dt 0.0
-  dronesAlpha: dt 0.0
-  dronesX: dd 0
-  dronesY: dd 0
-  dronesDestroyedTargets: dd 0
-  dronesId: dd 0
-  targetRandHelper: dd 0
   targetX: dd 0
   targetY: dd 0
   numofDrones: dd 0  ;num of drones
@@ -72,6 +60,7 @@ main:
   add esp, 4
   push esp
   call sscanf
+  ;QUESTION: BETA IN DEGS OR IN RADS?
   push beta
   push "%d "
   add esp, 4
