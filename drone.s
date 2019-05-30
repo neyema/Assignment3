@@ -17,7 +17,7 @@ section .data
   mayDestroyAlphaHelper: dq 0.0
   mayDestroyGamma: dq 0
   junkHelper: dq 0.0
-  
+
 section .text
   align 16
   extern generate_rand
@@ -31,11 +31,7 @@ section .text
   extern targetY
   extern beta
   extern d
-
-;destorys the target
-;TODO: THIS
-destroyTarget:
-  ret
+  extern targetDestroyed
 
 drone_routine: ;the code for drone co-routine
   pop dword [dronesId]
@@ -200,11 +196,8 @@ drone_routine: ;the code for drone co-routine
   je .end
   ;destroy the target
   add dword [dronesDestroyedTargets], 1
-  pushad
-  pushfd
-  call destroyTarget
-  popfd
-  popad
+  mov byte [targetDestroyed], 1  ;the flag to the scheduler
+
   ;assumes that number of destroyed targets for this drone in eax
   cmp eax, dword [numofTargets]
   jge .win

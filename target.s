@@ -1,4 +1,3 @@
-
 global targetX
 global targetY
 global target_routine
@@ -14,14 +13,7 @@ section .text
   extern schedulerCO
   extern resume
 
-target_routine:
-  call createTarget
-  mov ebx, [schedulerCO]
-  call resume
-
-createTarget:
-  pushfd
-  pushad
+target_routine:  ;creating new target
   call generate_rand
   pop dword [targetRandHelper]
   popad
@@ -32,7 +24,7 @@ createTarget:
   fidiv dword [esp]
   pop eax
   push 100
-  fimul dword [esp]          ;to get [0, 100]
+  fimul dword [esp]   ;to get [0, 100]
   fstp qword [targetX]
   pushfd
   pushad
@@ -45,6 +37,7 @@ createTarget:
   fidiv dword [esp]
   pop eax
   push 100
-  fimul dword [esp]          ;to get [0, 100]
+  fimul dword [esp]  ;to get [0, 100]
   fstp qword [targetY]
-  ret
+  mov ebx, [schedulerCO]
+  call resume

@@ -24,16 +24,16 @@ printer_routine:
   .printDrone:
     mov eax, COSZ
     mul ecx  ;eax<-ecx*COSZ
-    mov eax, [CORS+eax] ; get pointer to COi (i=ecx) struct
+    mov eax, [CORS+eax] ;get pointer to COi (i=ecx) struct
     add eax, 4        ;eax is the pointer to the stack
-    push dword [eax + 8]   ;dronesDestroyedTargets
+    push dword [eax + 8]    ;dronesDestroyedTargets
     push dword [eax + 12]   ;alpha
     push dword [eax + 16]   ;second part of alpha
-    push dword [eax + 20]    ;y
+    push dword [eax + 20]   ;y
     push dword [eax + 24]   ;second part of y
-    push dword [eax + 28]    ;x
+    push dword [eax + 28]   ;x
     push dword [eax + 32]   ;second part of x
-    push dword [eax + 4]   ;id
+    push dword [eax + 4]    ;id
     push printDroneFormat
     call printf
     add ecx, 1

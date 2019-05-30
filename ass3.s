@@ -22,6 +22,7 @@ COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
+  intFormat: db "%d", 10, 0
 
 section .bss
   CURR: resd 1
@@ -48,44 +49,56 @@ section .text
   ;C library functions
   extern malloc
   extern sscanf
+  extern free
 
 main:
   push ebp
   mov ebp, esp
-  add esp, 8 ;discard argc and argv[0]
-  ;;scanf
-  mov eax, esp
-  ;push the argument in opposite order
+  add esp, 8  ;discard return address and argc, so we have argv (char**)
+  mov ecx, esp  ;now in esp the char**
+  sub esp, 8
+  add ecx, 4  ;argc[0] is the file name, so in ecx<-argc[1] (cahr*)
+  ;remember! push the arguments in opposite order
   push numofDrones
-  push "%d "
-  push esp
+  push intFormat
+  push ecx
   call sscanf
+  add esp, 12
+
+  add ecx, 4
   push numofTargets
-  push "%d "
-  add esp, 4
-  push esp
+  push intFormat
+  push ecx
   call sscanf
+  add esp, 12
+
+  add ecx, 4
   push K
-  push "%d "
-  add esp, 4
-  push esp
+  push intFormat
+  push ecx
   call sscanf
-  ;QUESTION: BETA IN DEGS OR IN RADS?
+  add esp, 12
+
+  add ecx, 4
   push beta
-  push "%d "
-  add esp, 4
-  push esp
+  push intFormat
+  push ecx
   call sscanf
+  add esp, 12
+
+  add ecx, 4
   push d
-  push "%d "
-  add esp, 4
-  push esp
+  push intFormat
+  push ecx
   call sscanf
+  add esp, 12
+
+  add ecx, 4
   push seed
-  push "%d "
-  add esp, 4
-  push esp
+  push intFormat
+  push ecx
   call sscanf
+  add esp, 12
 
   ;allocating size for CORS
   mov eax, [numofDrones]
@@ -113,10 +126,13 @@ initCORS:
   push 0 ;y
   push 0 ;angle TODO: change to random [0,360]
   push 0 ;number of destoryed targets
+  pushfd ;for the first time calling to the drone (we'll do pop in do_resume)
+  pushad
   cmp ecx, [numofDrones]
   add ecx, 1
   jle initCORS
 
+;TODO: in every routine, init also the private stack with ad,fd
 initScheduler:
   mov dword [schedulerCO], scheduler_routine  ;pointer to function
   mov dword [schedulerCO+4], schedulerCO+COSZ ;stack pointer initialized to end of stack
@@ -124,20 +140,20 @@ initScheduler:
   mov dword esp, [schedulerCO+4]
 
   ;start scheduler
-  pushad; save registers of main ()
-  mov [SPMAIN], ESP; save ESP of main ()
-  mov ebx, schedulerCO; gets a pointer to a scheduler struct
+  pushad ;save registers of main ()
+  mov [SPMAIN], ESP ;save ESP of main ()
+  mov ebx, schedulerCO ;gets a pointer to a scheduler routine
   jmp do_resume
 
 endCo:
-  mov ESP, [SPMAIN]  ; restore ESP of main()
-  popad; restore registers of main()
+  mov ESP, [SPMAIN]  ;restore ESP of main()
+  popad ;restore registers of main()
 
   ;the inveriant that helps the resume-do_resume method is:
   ;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
   ;return address can be to the line 'jmp drone_routine'
 resume: ;save state of current co-routine
-  push dword [ebx]  ;pointer to function
+  ;push dword [ebx]  ;pointer to function
   pushfd
   pushad
   mov edx, [CURR]
@@ -184,3 +200,12 @@ generate_rand:
 
 ;free all and exit
 quit:
+  push dword [CORS]  ;in CORS the address to the memory
+  call free
+  ;these next 3 are not needed maybe
+  push dword schedulerCO
+  call free
+  push targetCO
+  call free
+  push printerCO
+  call free
