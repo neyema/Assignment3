@@ -1,14 +1,23 @@
-  extern generate_rand
-  extern targetX
-  extern targetY
-  extern schedulerCO
-  extern resume
+
+global targetX
+global targetY
+global target_routine
+
 section .data
+  targetX: dd 0
+  targetY: dd 0
   targetRandHelper: dd 0
 
 section .text
   align 16
-  global target_routine
+  extern generate_rand
+  extern schedulerCO
+  extern resume
+
+target_routine:
+  call createTarget
+  mov ebx, [schedulerCO]
+  call resume
 
 createTarget:
   pushfd
@@ -39,8 +48,3 @@ createTarget:
   fimul dword [esp]          ;to get [0, 100]
   fstp qword [targetY]
   ret
-
-target_routine:
-  call createTarget
-  mov ebx, [schedulerCO]
-  call resume

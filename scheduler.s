@@ -11,7 +11,7 @@ section .text
   extern CORS
   extern COSZ
   extern K
-  extern N
+  extern numofDrones
   extern printerCO
   extern endCo
 
@@ -20,7 +20,7 @@ section .data
   steps: dd 0
 
 scheduler_routine:
-  mov eax, [N]
+  mov eax, [numofDrones]
   cmp [idCURR], eax
   je first_drone
   add dword [idCURR], 1
@@ -34,21 +34,20 @@ scheduler_routine:
   first_drone:
     mov ebx, [CORS]
     call resume
-    jmp after_droneroutine  ;so that the drone will get to that code
-
+;the drone will get to this code
 after_droneroutine:
   mov eax, [steps]
   cmp eax, [K]
   je printBoard
-  add [steps], 1
-  jmp drone_won
+  add dword [steps], 1
+  jmp check_drone_won
 printBoard:
-  mov [steps], 0
+  mov dword [steps], 0
   mov ebx, printerCO
   call resume
 
 ;check if this drone won
-drone_won:
+check_drone_won:
   mov eax, [idCURR]
   mov ebx, COSZ
   mul ebx
@@ -58,4 +57,4 @@ drone_won:
   mov eax, [eax]
   cmp dword eax, [K]
   jge endCo
-  jmp drone_routine
+  jmp scheduler_routine

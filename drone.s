@@ -1,16 +1,4 @@
-
-  global drone_routine
-  extern generate_rand
-  extern numofTargets
-  extern target_routine
-  extern printf
-  extern quit
-  extern schedulerCO
-  extern resume
-  extern targetX
-  extern targetY
-  extern beta
-  extern d
+global drone_routine
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
@@ -29,8 +17,20 @@ section .data
   mayDestroyAlphaHelper: dq 0.0
   mayDestroyGamma: dq 0
   junkHelper: dq 0.0
+  
 section .text
   align 16
+  extern generate_rand
+  extern numofTargets
+  extern target_routine
+  extern printf
+  extern quit
+  extern schedulerCO
+  extern resume
+  extern targetX
+  extern targetY
+  extern beta
+  extern d
 
 ;destorys the target
 ;TODO: THIS

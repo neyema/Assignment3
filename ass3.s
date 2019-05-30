@@ -1,25 +1,29 @@
 global CORS
+GLOBAL COSZ
 global SPT
 global SPMAIN
+global numofDrones
+global numofTargets
+global K
+global beta
+global d
+global resume
+global schedulerCO
+global printerCO
 
-section .text
-  align 16
-  extern drone_routine
-  extern target_routine
-  extern scheduler_routine
-  ;C library functions
-  extern malloc
-  extern sscanf
-  global generate_rand
+global main
+global generate_rand
+global endCo
+global quit
+
+STKSZ EQU 16*1024
+;stack looks like (from highest): x, y, angle, numOfDestTargets ...
+COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
+
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
-  printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
-  printDroneFormat: db "%d,%.2f,%.2f,%.2f,%d"  ;id,x,y,alpha,destoyedTargets
 
 section .bss
-  STKSZ EQU 16*1024
-  ;stack looks like (from highest): x, y, angle, numOfDestTargets ...
-  COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
   CURR: resd 1
   SPT: resd 1  ;4 bytes, temporary stack pointer
   SPMAIN: resd 1  ;stack pointer of main, when back from scheduler
@@ -28,8 +32,6 @@ section .bss
   targetCO: resb COSZ
 
 section .data
-  targetX: dd 0
-  targetY: dd 0
   numofDrones: dd 0  ;num of drones
   numofTargets: dd 0  ;num of targets needed to destroy to win
   K: dd 0  ;num of drone steps between broad printing
@@ -39,6 +41,14 @@ section .data
   CORS: dd 0  ;address to the array of co-routines
 
 section .text
+  align 16
+  extern drone_routine
+  extern target_routine
+  extern scheduler_routine
+  ;C library functions
+  extern malloc
+  extern sscanf
+
 main:
   push ebp
   mov ebp, esp
@@ -123,9 +133,9 @@ endCo:
   mov ESP, [SPMAIN]  ; restore ESP of main()
   popad; restore registers of main()
 
-;the inveriant that helps the resume-do_resume method is:
-;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
-;return address can be to the line 'jmp drone_routine'
+  ;the inveriant that helps the resume-do_resume method is:
+  ;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
+  ;return address can be to the line 'jmp drone_routine'
 resume: ;save state of current co-routine
   push dword [ebx]  ;pointer to function
   pushfd
@@ -141,7 +151,7 @@ do_resume: ;load ESP for resumed co-routine
   ret  ;"return" to resumed co-routine
   ;this will pop the address to the function and jmp there
 
-;Generates rand number between 1 and max int
+  ;Generates rand number between 1 and max int
 generate_rand:
   mov eax, [seed]   ;eax is lfsr
   mov ebx, 0    ;bit will be in bx
