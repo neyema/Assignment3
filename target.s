@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-
-;for debug: print the details in each iteration of the loop
-target_routine: ;the code for targer co-routine
-=======
 global targetX
 global targetY
 global target_routine
@@ -46,4 +41,3 @@ target_routine:  ;creating new target
   fstp qword [targetY]
   mov ebx, [schedulerCO]
   call resume
->>>>>>> bd27e7493e87a4289756dd2d397dc7f9c43614ca

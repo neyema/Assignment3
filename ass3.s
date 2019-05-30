@@ -32,12 +32,6 @@ section .bss
   printerCO: resb COSZ
   targetCO: resb COSZ
 
-<<<<<<< HEAD
-STKSIZE equ 16*1024
-
-;global!!!! array of co-routines so we can execute them in round-robin
-=======
->>>>>>> bd27e7493e87a4289756dd2d397dc7f9c43614ca
 section .data
   numofDrones: dd 0  ;num of drones
   numofTargets: dd 0  ;num of targets needed to destroy to win
@@ -60,10 +54,11 @@ section .text
 main:
   push ebp
   mov ebp, esp
-  add esp, 8  ;discard return address and argc, so we have argv (char**)
+  ;add esp, 8  ;discard return address and argc, so we have argv (char**)
+  add esp, 4  ;argv (char**) is the last argument on the stack, so
   mov ecx, esp  ;now in esp the char**
   sub esp, 8
-  add ecx, 4  ;argc[0] is the file name, so in ecx<-argc[1] (cahr*)
+  add ecx, 4  ;argv[0] is the file name, so in ecx<-argv[1] (char*)
   ;remember! push the arguments in opposite order
   push numofDrones
   push intFormat
@@ -108,14 +103,8 @@ main:
 
   ;allocating size for CORS
   mov eax, [numofDrones]
-<<<<<<< HEAD
-  add dword eax, [numofDrones]  ;eax=numofDrones*2
-  add dword eax, eax  ;eax=numofDrones*4
-  ;eax<-munOfDrones*(STKSIZE+8)
-=======
   mov ebx, COSZ
   mul ebx  ;eax<-COSZ*numofDrones
->>>>>>> bd27e7493e87a4289756dd2d397dc7f9c43614ca
   push eax
   call malloc
   mov [CORS], eax  ;the pointer returned by malloc
