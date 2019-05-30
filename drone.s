@@ -20,7 +20,6 @@ section .data
   dronesRandRetHelper: dd 0
   dronesRandAngleF: dq 0.0
   dronesRandDistance: dq 0.0
-  dronesRandHelper: dq 0.0
   dronesAlpha: dq 0.0
   dronesX: dq 0.0
   dronesY: dq 0.0
@@ -101,7 +100,7 @@ drone_routine: ;the code for drone co-routine
     pop esi
     jmp .angleIsCool
   .lowerThan0:
-    push 0
+    push 360
     fstp qword [junkHelper]    ;clean stack
     fiadd dword [esp]    ;plus 360
     pop esi
@@ -111,7 +110,7 @@ drone_routine: ;the code for drone co-routine
     ;calculate dx and dy
     mov ebx, dronesX
     mov ecx, dronesY
-    fld qword [dronesRandAngleF]
+    fld qword [dronesAlpha]
     fldpi
     fmul
     push 180
@@ -121,10 +120,9 @@ drone_routine: ;the code for drone co-routine
     fld qword [dronesNewAlphaInRad]
     fcos
     fld qword [dronesRandDistance]
-    fmul st0, st1   ;dx=d*cos(alpha)
+    fmul  ;dx=d*cos(alpha)
     fld qword [ebx]
-    fadd st0, st1   ;new_x=dx+old_x
-    fstp qword [junkHelper]       ;clean junk
+    fadd   ;new_x=dx+old_x
     ;in fstack we got old_x+something, can be over 100 or below 0 (can it be below 0? nvm)
     ;make sure that new x is in [0,100]
     push 100
@@ -159,10 +157,9 @@ drone_routine: ;the code for drone co-routine
     fld qword [dronesNewAlphaInRad]
     fsin
     fld qword [dronesRandDistance]
-    fmul st0, st1   ;dy=d*sin(alpha)
+    fmul   ;dy=d*sin(alpha)
     fld qword [ecx]
-    fadd st0, st1    ;new_y=dy+old_y
-    fstp qword [junkHelper]       ;clean junk
+    fadd   ;new_y=dy+old_y
     ;in fstack we got old_y+something, can be over 100 or below 0 (can it be below 0? nvm)
     ;make sure that new y is in [0,100]
     push 100
@@ -196,7 +193,7 @@ drone_routine: ;the code for drone co-routine
   pushad
   pushfd
   call mayDestroy
-  pop dword [dronesMayDestroyHelper]
+  mov eax, dword [dronesMayDestroyHelper]
   popfd
   popad
   cmp dword [dronesMayDestroyHelper], 0
@@ -231,8 +228,11 @@ drone_routine: ;the code for drone co-routine
     jmp quit
   .end:
   push dword [dronesX] ;x
+  push dword [dronesX+4]   ;next part of x
   push dword [dronesY] ;y
+  push dword [dronesY+4]
   push dword [dronesAlpha]
+  push dword [dronesAlpha+4]
   push dword [dronesDestroyedTargets]
   push dword [dronesId]
   mov ebx, schedulerCO
@@ -249,7 +249,6 @@ drone_routine: ;the code for drone co-routine
     push dword [dronesNewAlphaInRad+4]
     pop dword [mayDestroyAlphaHelper+4]
     pop dword [mayDestroyAlphaHelper]
-    .calc:
     finit
     fld qword [ecx]
     fsub qword [esi]
@@ -258,22 +257,26 @@ drone_routine: ;the code for drone co-routine
     ;in st0: x2-x1, in st1: y2-y1
     fpatan
     fstp qword [mayDestroyGamma]
+    .calc:
+    finit
     mov eax, mayDestroyAlphaHelper
     fld qword [eax]
     fsub qword [mayDestroyGamma]
+    fabs
     fldpi
     fcomi   ;cmp pi, (alpha-gamma)
     jb .greaterThanPi
     jmp .coolWithPi
     .greaterThanPi:
       finit
-      fild qword [mayDestroyGamma]
-      fild qword [dronesNewAlphaInRad]
+      fld qword [mayDestroyGamma]
+      fld qword [dronesNewAlphaInRad]
       fcomi
       jb .alphaIsBigger
       jmp .gammaIsBigger
       ;adding 2pi to the smaller angle and calc again
       .alphaIsBigger:
+        finit
         fldpi
         push 2
         fimul dword [esp]
@@ -283,6 +286,7 @@ drone_routine: ;the code for drone co-routine
         fstp qword [mayDestroyGamma]
         jmp .computeAgain
       .gammaIsBigger:
+        finit
         fldpi
         push 2
         fimul dword [esp]
@@ -293,7 +297,7 @@ drone_routine: ;the code for drone co-routine
       .computeAgain:
         jmp .calc
     .coolWithPi:
-    fabs
+    fstp qword [junkHelper]
     fild dword [beta]
     fcomi
     ja .otherCond
