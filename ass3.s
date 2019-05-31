@@ -16,13 +16,26 @@ global generate_rand
 global endCo
 global quit
 
+%macro scanCmd 2  ;assumption: in ebx the value of argv (char**)
+  mov ecx, [ebx+%2]  ;ecx<-argv[...] (char*)
+  pushad
+  pushfd
+  push %1
+  push intFormat
+  push ecx
+  call sscanf
+  add esp, 12
+  popfd
+  popad
+%endmacro
+
 STKSZ EQU 16*1024
 ;stack looks like (from highest): x, y, angle, numOfDestTargets ...
 COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
-  intFormat: db "%d", 10, 0
+  intFormat: db "%d ", 10, 0
 
 section .bss
   CURR: resd 1
@@ -54,60 +67,28 @@ section .text
 main:
   push ebp
   mov ebp, esp
-  ;add esp, 8  ;discard return address and argc, so we have argv (char**)
-  add esp, 4  ;argv (char**) is the last argument on the stack, so
-  mov ecx, esp  ;now in esp the char**
-  sub esp, 8
-  add ecx, 4  ;argv[0] is the file name, so in ecx<-argv[1] (char*)
+  mov ebx, [ebp+8]  ;discard return address and argc, so we have argv (char**)
+  ;now in ecx the pointer to argv[0], the file name
   ;remember! push the arguments in opposite order
-  push numofDrones
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
-
-  add ecx, 4
-  push numofTargets
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
-
-  add ecx, 4
-  push K
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
-
-  add ecx, 4
-  push beta
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
-
-  add ecx, 4
-  push d
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
-
-  add ecx, 4
-  push seed
-  push intFormat
-  push ecx
-  call sscanf
-  add esp, 12
+  scanCmd numofDrones,4  ;argv[1]
+  scanCmd numofTargets,8
+  scanCmd K,12
+  scanCmd beta,16
+  scanCmd d,20
+  scanCmd seed,24
 
   ;allocating size for CORS
   mov eax, [numofDrones]
   mov ebx, COSZ
   mul ebx  ;eax<-COSZ*numofDrones
+  pushad
+  pushfd
   push eax
   call malloc
   mov [CORS], eax  ;the pointer returned by malloc
+  add esp, 4  ;discard push eax
+  popfd
+  popad
 
   mov ecx, 1  ;drone id is 1 to N
 initCORS:
@@ -203,10 +184,14 @@ generate_rand:
 quit:
   push dword [CORS]  ;in CORS the address to the memory
   call free
+  add esp, 4
   ;these next 3 are not needed maybe
   push dword schedulerCO
   call free
+  add esp, 4
   push targetCO
   call free
+  add esp, 4
   push printerCO
   call free
+  add esp, 4
