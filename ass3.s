@@ -35,7 +35,7 @@ COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
-  intFormat: db "%d", 10, 0
+  intFormat: db "%d", 0
 
 section .bss
   CURR: resd 1
@@ -46,12 +46,12 @@ section .bss
   targetCO: resb COSZ
 
 section .data
-  numofDrones: dd 1  ;num of drones
-  numofTargets: dd 1  ;num of targets needed to destroy to win
-  K: dd 1  ;num of drone steps between broad printing
-  beta: dd 15  ;the angle of drone field-of-view
-  d: dd 30  ;maximum distance that allows to destroy a target
-  seed: dd 15019
+  numofDrones: dd 0  ;num of drones
+  numofTargets: dd 0  ;num of targets needed to destroy to win
+  K: dd 0 ;num of drone steps between broad printing
+  beta: dd 0  ;the angle of drone field-of-view
+  d: dd 0  ;maximum distance that allows to destroy a target
+  seed: dd 0
   CORS: dd 0  ;address to the array of co-routines
 
 section .text
@@ -71,12 +71,12 @@ main:
   mov ebx, [esp+12]  ;discard ebp, return address and argc, so we have argv (char**)
   ;now in ebx the pointer to argv[0], the file name
   ;remember! push the arguments in opposite order
-  ;scanCmd numofDrones,4  ;argv[1]
-  ;scanCmd numofTargets,8
-  ;scanCmd K,12
-  ;scanCmd beta,16
-  ;scanCmd d,20
-  ;scanCmd seed,24
+  scanCmd numofDrones,4  ;argv[1]
+  scanCmd numofTargets,8
+  scanCmd K,12
+  scanCmd beta,16
+  scanCmd d,20
+  scanCmd seed,24
 
   ;allocating size for CORS
   mov eax, [numofDrones]
