@@ -1,3 +1,5 @@
+global printer_routine
+
 section .rodata
   printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
   printDroneFormat: db "%d,%.2f,%.2f,%.2f,%d"  ;id,x,y,alpha,destoyedTargets

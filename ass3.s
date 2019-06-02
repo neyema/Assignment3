@@ -46,12 +46,12 @@ section .bss
   targetCO: resb COSZ
 
 section .data
-  numofDrones: dd 0  ;num of drones
-  numofTargets: dd 0  ;num of targets needed to destroy to win
-  K: dd 0  ;num of drone steps between broad printing
-  beta: dd 0  ;the angle of drone field-of-view
-  d: dd 0  ;maximum distance that allows to destroy a target
-  seed: dd 0
+  numofDrones: dd 1  ;num of drones
+  numofTargets: dd 1  ;num of targets needed to destroy to win
+  K: dd 1  ;num of drone steps between broad printing
+  beta: dd 15  ;the angle of drone field-of-view
+  d: dd 30  ;maximum distance that allows to destroy a target
+  seed: dd 15019
   CORS: dd 0  ;address to the array of co-routines
 
 section .text
@@ -59,6 +59,7 @@ section .text
   extern drone_routine
   extern target_routine
   extern scheduler_routine
+  extern printer_routine
   ;C library functions
   extern malloc
   extern sscanf
@@ -70,37 +71,45 @@ main:
   mov ebx, [esp+12]  ;discard ebp, return address and argc, so we have argv (char**)
   ;now in ebx the pointer to argv[0], the file name
   ;remember! push the arguments in opposite order
-  scanCmd numofDrones,4  ;argv[1]
-  scanCmd numofTargets,8
-  scanCmd K,12
-  scanCmd beta,16
-  scanCmd d,20
-  scanCmd seed,24
+  ;scanCmd numofDrones,4  ;argv[1]
+  ;scanCmd numofTargets,8
+  ;scanCmd K,12
+  ;scanCmd beta,16
+  ;scanCmd d,20
+  ;scanCmd seed,24
 
   ;allocating size for CORS
   mov eax, [numofDrones]
   mov ebx, COSZ
-  mul ebx  ;edx<-COSZ*numofDrones
+  mul ebx  ;eax<-COSZ*numofDrones    ;DAMM YOU ASSEMBLY CHECK malloc with 10 drones
   pushad
   pushfd
-  push edx
+  push eax
   call malloc
   add esp, 4  ;discard push eax
   mov [CORS], eax  ;the pointer returned by malloc
   popfd
   popad
 
-  mov ecx, 1  ;drone id is 1 to N
+;init Target
+  mov dword [targetCO], target_routine
+  mov dword [targetCO+4], targetCO+COSZ
+;init Printer
+  mov dword [printerCO], printer_routine
+  mov dword [printerCO+4], printerCO+COSZ
+
+  mov ecx, 0  ;drone id is 1 to N
 initCORS:
-  ;TODO: FIRST, INIT TARGET
-  mov ebx, [CORS]
-  sub ecx, 1
   mov eax, COSZ
-  mul ecx  ;ecx<-COSZ*(ecx-1)
-  add ebx, ecx  ;get pointer to COi (i=ecx-1) struct
+  mul ecx  ;eax<-COSZ*(ecx-1)
+  ;we want in eax the offset in bytes in CORS
+  mov ebx, [CORS]
+  add ebx, eax  ;get pointer to COi (i=ecx-1) struct
   mov dword [ebx], drone_routine  ;pointer to function
-  add eax, COSZ
-  mov dword [eax+4], eax  ;stack pointer initialized to end of stack
+  ;add eax, COSZ  ;eax<-end of routine struct
+  add eax, [CORS]
+  add eax, COSZ   ;eax is the address to the end of stack of COi (i=ecx-1) *in CORS*
+  mov dword [ebx+4], eax  ;stack pointer initialized to end of stack
   mov [SPT], esp
   mov dword esp, [ebx+4]
   ;push ecx  ;drone-id
@@ -110,25 +119,32 @@ initCORS:
   push 0 ;number of destoryed targets
   pushfd ;for the first time calling to the drone (we'll do pop in do_resume)
   pushad
-  cmp ecx, [numofDrones]
+  mov esp, [SPT]
   add ecx, 1
-  jle initCORS
+  cmp ecx, [numofDrones]
+  jl initCORS
 
-;TODO: in every routine, init also the private stack with ad,fd
 initScheduler:
   mov dword [schedulerCO], scheduler_routine  ;pointer to function
   mov dword [schedulerCO+4], schedulerCO+COSZ ;stack pointer initialized to end of stack
   mov [SPT], esp
-  mov dword esp, [schedulerCO+4]
+  mov esp, [schedulerCO+4]
+  ;only in scheduler routine, init the private stack with ad,fd,address for "ret" for the first do_resume
+  push scheduler_routine
+  pushfd
+  pushad
+  mov dword esp, [SPT]
 
-  ;start scheduler
-  pushad ;save registers of main ()
-  mov [SPMAIN], ESP ;save ESP of main ()
+;start scheduler
+  pushad  ;save registers of main
+  pushfd
+  mov [SPMAIN], ESP  ;save ESP of main
   mov ebx, schedulerCO ;gets a pointer to a scheduler routine
   jmp do_resume
 
 endCo:
   mov ESP, [SPMAIN]  ;restore ESP of main()
+  popfd
   popad ;restore registers of main()
 
   ;the inveriant that helps the resume-do_resume method is:
