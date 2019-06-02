@@ -35,7 +35,7 @@ COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
-  intFormat: db "%d ", 10, 0
+  intFormat: db "%d", 10, 0
 
 section .bss
   CURR: resd 1
@@ -67,8 +67,8 @@ section .text
 main:
   push ebp
   mov ebp, esp
-  mov ebx, [ebp+8]  ;discard return address and argc, so we have argv (char**)
-  ;now in ecx the pointer to argv[0], the file name
+  mov ebx, [esp+12]  ;discard ebp, return address and argc, so we have argv (char**)
+  ;now in ebx the pointer to argv[0], the file name
   ;remember! push the arguments in opposite order
   scanCmd numofDrones,4  ;argv[1]
   scanCmd numofTargets,8
@@ -80,13 +80,13 @@ main:
   ;allocating size for CORS
   mov eax, [numofDrones]
   mov ebx, COSZ
-  mul ebx  ;eax<-COSZ*numofDrones
+  mul ebx  ;edx<-COSZ*numofDrones
   pushad
   pushfd
-  push eax
+  push edx
   call malloc
-  mov [CORS], eax  ;the pointer returned by malloc
   add esp, 4  ;discard push eax
+  mov [CORS], eax  ;the pointer returned by malloc
   popfd
   popad
 
