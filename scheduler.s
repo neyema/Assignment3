@@ -17,7 +17,7 @@ section .text
   extern printerCO
   extern target_routine
   extern endCo
-
+;change between sections
 section .data
   idCURR: dd 1  ;1->N
   steps: dd 0
@@ -37,7 +37,7 @@ scheduler_routine:
   call resume
   jmp after_droneroutine
 first_drone:
-  mov ebx, [CORS]
+  mov dword ebx, [CORS]
   call resume
 ;when back fron drone routine, we'll be in this code
 cmp byte [targetDestroyed], 0

@@ -83,7 +83,7 @@ main:
   ;allocating size for CORS
   mov eax, [numofDrones]
   mov ebx, COSZ
-  mul ebx  ;eax<-COSZ*numofDrones    ;DAMM YOU ASSEMBLY CHECK malloc with 10 drones
+  mul ebx  ;eax<-COSZ*numofDrones    ;TODO: DAMM YOU ASSEMBLY CHECK malloc with 10 drones
   pushad
   pushfd
   push eax
@@ -93,10 +93,10 @@ main:
   popfd
   popad
 
-;init Target
+  ;init Target
   mov dword [targetCO], target_routine
   mov dword [targetCO+4], targetCO+COSZ
-;init Printer
+  ;init Printer
   mov dword [printerCO], printer_routine
   mov dword [printerCO+4], printerCO+COSZ
 
@@ -159,9 +159,18 @@ initCORS:
   push dword [randHelper] ;angle [0,360]
   push dword [randHelper + 4]   ;second part of angle
   push 0 ;number of destoryed targets
-  pushfd ;for the first time calling to the drone (we'll do pop in do_resume)
+  push drone_routine  ;for the first time calling to the drone (we'll do pop in do_resume)
+  pushfd
   pushad
+  mov dword [ebx+4], esp  ;ebx is the pointer to the co routine in the CORS array
   mov esp, [SPT]
+  ;now update the private stack pointer
+  ;mov eax, COSZ
+  ;mul ecx  ;eax<-COSZ*(ecx-1) (in eax the offset in bytes in CORS)
+  ;mov ebx, [CORS]
+  ;add ebx, eax  ;get pointer to COi (i=ecx-1) struct
+
+  ;condition of initCORS loop
   add ecx, 1
   cmp ecx, [numofDrones]
   jl initCORS
@@ -175,19 +184,21 @@ initScheduler:
   push scheduler_routine
   pushfd
   pushad
+  mov [schedulerCO+4], esp
   mov dword esp, [SPT]
 
 ;start scheduler
   pushad  ;save registers of main
   pushfd
-  mov [SPMAIN], ESP  ;save ESP of main
+  mov [SPMAIN], esp  ;save ESP of main
   mov ebx, schedulerCO ;gets a pointer to a scheduler routine
   jmp do_resume
 
 endCo:
-  mov ESP, [SPMAIN]  ;restore ESP of main()
+  mov esp, [SPMAIN]  ;restore ESP of main()
   popfd
   popad ;restore registers of main()
+  jmp quit
 
   ;the inveriant that helps the resume-do_resume method is:
   ;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
@@ -200,7 +211,7 @@ resume: ;save state of current co-routine
   mov dword [edx+4], ESP  ;save current ESP
 
 do_resume: ;load ESP for resumed co-routine
-  mov esp, [ebx+4]
+  mov dword esp, [ebx+4]
   mov [CURR], ebx
   popad ;restore resumed co-routine state
   popfd
