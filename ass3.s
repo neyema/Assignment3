@@ -239,7 +239,6 @@ generate_randOld:
   ret
 
 random_bit:
-  mov eax, 0
   mov al, 101101b    ;the taps
   xor al, [randWord]     ;compute parity of bits (PF), clear CF
   jpe result_ok      ;jmp if even parity
