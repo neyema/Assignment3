@@ -12,14 +12,17 @@ section .text
   extern generate_rand
   extern schedulerCO
   extern resume
+  extern randWord
 
 target_routine:  ;creating new target
+  pushfd
+  pushad
   call generate_rand
-  pop dword [targetRandHelper]
+  ;mov dword [targetRandHelper], eax
   popad
   popfd
   finit
-  fild dword [targetRandHelper]
+  fild dword [randWord]
   push 2147483647   ;max int
   fidiv dword [esp]
   pop eax
@@ -29,10 +32,10 @@ target_routine:  ;creating new target
   pushfd
   pushad
   call generate_rand
-  pop dword [targetRandHelper]
+  ;mov dword [targetRandHelper], eax
   popfd
   popad
-  fild dword [targetRandHelper]
+  fild dword [randWord]
   push 2147483647   ;max int
   fidiv dword [esp]
   pop eax

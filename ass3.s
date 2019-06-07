@@ -7,6 +7,7 @@ global numofTargets
 global K
 global beta
 global d
+global randWord
 global resume
 global schedulerCO
 global printerCO
@@ -51,8 +52,9 @@ section .data
   K: dd 0 ;num of drone steps between broad printing
   beta: dd 0  ;the angle of drone field-of-view
   d: dd 0  ;maximum distance that allows to destroy a target
-  seed: dd 0
+  randWord: dd 0
   CORS: dd 0  ;address to the array of co-routines
+  randHelper: dq 0
 
 section .text
   align 16
@@ -76,7 +78,7 @@ main:
   scanCmd K,12
   scanCmd beta,16
   scanCmd d,20
-  scanCmd seed,24
+  scanCmd randWord,24
 
   ;allocating size for CORS
   mov eax, [numofDrones]
@@ -113,9 +115,49 @@ initCORS:
   mov [SPT], esp
   mov dword esp, [ebx+4]
   ;push ecx  ;drone-id
-  push 0 ;x TODO: change to random
-  push 0 ;y
-  push 0 ;angle TODO: change to random [0,360]
+  pushfd
+  pushad
+  call generate_rand
+  popad
+  popfd
+  finit
+  fild dword [randWord]
+  push 2147483647   ;max int
+  fidiv dword [esp]
+  pop eax
+  push 100
+  fimul dword [esp]   ;to get [0, 100]
+  fstp qword [randHelper]
+  push dword [randHelper]       ;x
+  push dword [randHelper + 4]  ;second part of x
+  pushfd
+  pushad
+  call generate_rand
+  popad
+  popfd
+  fild dword [randWord]
+  push 2147483647   ;max int
+  fidiv dword [esp]
+  pop eax
+  push 100
+  fimul dword [esp]   ;to get [0, 100]
+  fstp qword [randHelper]
+  push dword [randHelper]       ;y
+  push dword [randHelper + 4]   ;second part of y
+  pushfd
+  pushad
+  call generate_rand
+  popad
+  popfd
+  fild dword [randWord]
+  push 2147483647   ;max int
+  fidiv dword [esp]
+  pop eax
+  push 360
+  fimul dword [esp]   ;to get [0, 360]
+  fstp qword [randHelper]
+  push dword [randHelper] ;angle [0,360]
+  push dword [randHelper + 4]   ;second part of angle
   push 0 ;number of destoryed targets
   pushfd ;for the first time calling to the drone (we'll do pop in do_resume)
   pushad
@@ -166,8 +208,8 @@ do_resume: ;load ESP for resumed co-routine
   ;this will pop the address to the function and jmp there
 
   ;Generates rand number between 1 and max int
-generate_rand:
-  mov eax, [seed]   ;eax is lfsr
+generate_randOld:
+  mov eax, [randWord]   ;eax is lfsr
   mov ebx, 0    ;bit will be in bx
   mov esi, 0    ;period will be in esi
   .doLoop:
@@ -191,10 +233,29 @@ generate_rand:
     or ecx, edx
     mov ecx, eax
     add esi, 1
-    cmp eax, [seed]
+    cmp eax, [randWord]
     jne .doLoop
-  push esi ;push period to return it
+  mov eax, esi ;move period to eax to return
   ret
+
+random_bit:
+  mov eax, 0
+  mov al, 101101b    ;the taps
+  xor al, [randWord]     ;compute parity of bits (PF), clear CF
+  jpe result_ok      ;jmp if even parity
+  stc                ;set carry flag to be 1
+result_ok:
+  ;the randomly generated bit is in CF
+  rcr word [randWord], 1   ;rotate with carry right new bit (from CF) into pseudo-random state
+  ret
+generate_rand:
+  ;we need 16 random bits
+  mov ecx, 16
+next_bit:
+  call random_bit
+  loop next_bit, ecx
+  ret
+
 
 ;free all and exit
 quit:

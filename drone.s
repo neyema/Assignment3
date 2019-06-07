@@ -31,6 +31,7 @@ section .text
   extern targetY
   extern beta
   extern d
+  extern randWord
   extern targetDestroyed
 
 drone_routine: ;the code for drone co-routine
@@ -45,11 +46,11 @@ drone_routine: ;the code for drone co-routine
   pushad
   pushfd
   call generate_rand
-  pop dword [dronesRandRetHelper]
+  ;mov dword [dronesRandRetHelper] eax
   popfd
   popad
   finit
-  fild dword [dronesRandRetHelper]  ;the angle itself
+  fild dword [randWord]  ;the angle itself
   push 2147483647   ;max int
   fidiv dword [esp]
   pop eax
@@ -64,10 +65,10 @@ drone_routine: ;the code for drone co-routine
   pushad
   pushfd
   call generate_rand
-  pop dword [dronesRandRetHelper]
+  ;pop dword [dronesRandRetHelper]
   popfd
   popad
-  fild dword [dronesRandRetHelper]  ;the angle itself
+  fild dword [randWord]  ;the angle itself
   push 2147483647   ;max int
   fidiv dword [esp]
   pop eax
