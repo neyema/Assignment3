@@ -154,11 +154,12 @@ initCORS:
   fidiv dword [esp]
   pop eax
   push 360
-  fimul dword [esp]   ;to get [0, 360]
+  fimul dword [esp]                ;to get [0, 360]
   fstp qword [randHelper]
-  push dword [randHelper] ;angle [0,360]
+  push dword [randHelper]        ;angle [0,360]
   push dword [randHelper + 4]   ;second part of angle
-  push 0 ;number of destoryed targets
+  push 0      ;number of destoryed targets
+  push ecx    ;droneId
   push drone_routine  ;for the first time calling to the drone (we'll do pop in do_resume)
   pushfd
   pushad
