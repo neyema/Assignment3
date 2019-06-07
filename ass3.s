@@ -109,7 +109,7 @@ initCORS:
   add ebx, eax  ;get pointer to COi (i=ecx-1) struct
   mov dword [ebx], drone_routine  ;pointer to function
   ;add eax, COSZ  ;eax<-end of routine struct
-  add eax, [CORS]
+  add eax, [CORS]  ;eax already contains COSZ*currID
   add eax, COSZ   ;eax is the address to the end of stack of COi (i=ecx-1) *in CORS*
   mov dword [ebx+4], eax  ;stack pointer initialized to end of stack
   mov [SPT], esp
