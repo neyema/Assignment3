@@ -96,9 +96,23 @@ main:
   ;init Target
   mov dword [targetCO], target_routine
   mov dword [targetCO+4], targetCO+COSZ
+  mov [SPT], esp
+  mov esp, [targetCO+4]
+  push target_routine
+  pushfd
+  pushad
+  mov [targetCO+4], esp
+  mov esp, [SPT]
   ;init Printer
   mov dword [printerCO], printer_routine
   mov dword [printerCO+4], printerCO+COSZ
+  mov [SPT], esp
+  mov esp, [printerCO+4]
+  push printer_routine
+  pushfd
+  pushad
+  mov [printerCO+4], esp
+  mov esp, [SPT]
 
   mov ecx, 0  ;drone id is 1 to N
 initCORS:
@@ -163,14 +177,9 @@ initCORS:
   push drone_routine  ;for the first time calling to the drone (we'll do pop in do_resume)
   pushfd
   pushad
+  ;update the private field of stack pointer
   mov dword [ebx+4], esp  ;ebx is the pointer to the co routine in the CORS array
   mov esp, [SPT]
-  ;now update the private stack pointer
-  ;mov eax, COSZ
-  ;mul ecx  ;eax<-COSZ*(ecx-1) (in eax the offset in bytes in CORS)
-  ;mov ebx, [CORS]
-  ;add ebx, eax  ;get pointer to COi (i=ecx-1) struct
-
   ;condition of initCORS loop
   add ecx, 1
   cmp ecx, [numofDrones]
