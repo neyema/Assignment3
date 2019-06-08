@@ -190,7 +190,7 @@ drone_routine: ;the code for drone co-routine
   pushad
   pushfd
   call mayDestroy
-  mov eax, dword [dronesMayDestroyHelper]
+  mov dword [dronesMayDestroyHelper], eax
   popfd
   popad
   cmp dword [dronesMayDestroyHelper], 0
@@ -316,9 +316,7 @@ mayDestroy:
   jmp .retFalse
   .retTrue:
   mov eax, 1
-  push eax
   ret
   .retFalse:
   mov eax, 0
-  push eax
   ret
