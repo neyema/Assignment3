@@ -134,20 +134,20 @@ drone_routine: ;the code for drone co-routine
     fcomi      ;cmp x and 0
     ja .xLowerThan0
     jmp .xIsOk
-    .xBiggerThan100:
-      fstp qword [junkHelper]
-      push 100
-      fisub dword [esp]
-      fild dword [esp]
-      pop eax
-      jmp .xIsOk
-    .xLowerThan0:
-      fstp qword [junkHelper]
-      push 100
-      fiadd dword [esp]
-      fild dword [esp]
-      pop eax
-    .xIsOk:
+  .xBiggerThan100:
+    fstp qword [junkHelper]
+    push 100
+    fisub dword [esp]
+    fild dword [esp]
+    pop eax
+    jmp .xIsOk
+  .xLowerThan0:
+    fstp qword [junkHelper]
+    push 100
+    fiadd dword [esp]
+    fild dword [esp]
+    pop eax
+  .xIsOk:
     ;TODO: next 2 lines seems odd. CHECK!
     fstp qword [junkHelper]   ;clean junk
     fstp qword [dronesX]     ;updates x!
@@ -171,20 +171,20 @@ drone_routine: ;the code for drone co-routine
     fcomi    ;cmp y and 0
     ja .yLowerThan0
     jmp .yIsOk
-    .yBiggerThan100:
-      fstp qword [junkHelper]
-      push 100
-      fisub dword [esp]
-      fild dword [esp]
-      pop eax
-      jmp .yIsOk
-    .yLowerThan0:
-      fstp qword [junkHelper]
-      push 100
-      fiadd dword [esp]
-      fild dword [esp]
-      pop eax
-    .yIsOk:
+  .yBiggerThan100:
+    fstp qword [junkHelper]
+    push 100
+    fisub dword [esp]
+    fild dword [esp]
+    pop eax
+    jmp .yIsOk
+  .yLowerThan0:
+    fstp qword [junkHelper]
+    push 100
+    fiadd dword [esp]
+    fild dword [esp]
+    pop eax
+  .yIsOk:
     fstp qword [junkHelper]   ;clean junk
     fstp qword [dronesY]     ;updates y!
   pushad
@@ -233,92 +233,92 @@ drone_routine: ;the code for drone co-routine
   call resume
   jmp drone_routine  ;this is the return address
 
-  ;returns dword 0 or 1 in the stack
-  mayDestroy:
-    mov ebx, [dronesX]
-    mov ecx, [dronesY]
-    mov edx, [targetX]
-    mov esi, [targetY]
-    push dword [dronesNewAlphaInRad]
-    push dword [dronesNewAlphaInRad+4]
-    pop dword [mayDestroyAlphaHelper+4]
-    pop dword [mayDestroyAlphaHelper]
+;returns dword 0 or 1 in the stack
+mayDestroy:
+  mov ebx, dronesX
+  mov ecx, dronesY
+  mov edx, targetX
+  mov esi, targetY
+  push dword [dronesNewAlphaInRad]
+  push dword [dronesNewAlphaInRad+4]
+  pop dword [mayDestroyAlphaHelper+4]
+  pop dword [mayDestroyAlphaHelper]
+  finit
+  fld qword [ecx]
+  fsub qword [esi]
+  fld qword [ebx]
+  fsub qword [edx]
+  ;in st0: x2-x1, in st1: y2-y1
+  fpatan
+  fstp qword [mayDestroyGamma]
+  .calc:
+  finit
+  mov eax, mayDestroyAlphaHelper
+  fld qword [eax]
+  fsub qword [mayDestroyGamma]
+  fabs
+  fldpi
+  fcomi   ;cmp pi, (alpha-gamma)
+  jb .greaterThanPi
+  jmp .coolWithPi
+  .greaterThanPi:
     finit
-    fld qword [ecx]
-    fsub qword [esi]
-    fld qword [ebx]
-    fsub qword [edx]
-    ;in st0: x2-x1, in st1: y2-y1
-    fpatan
-    fstp qword [mayDestroyGamma]
-    .calc:
-    finit
-    mov eax, mayDestroyAlphaHelper
-    fld qword [eax]
-    fsub qword [mayDestroyGamma]
-    fabs
-    fldpi
-    fcomi   ;cmp pi, (alpha-gamma)
-    jb .greaterThanPi
-    jmp .coolWithPi
-    .greaterThanPi:
+    fld qword [mayDestroyGamma]
+    fld qword [dronesNewAlphaInRad]
+    fcomi
+    jb .alphaIsBigger
+    jmp .gammaIsBigger
+    ;adding 2pi to the smaller angle and calc again
+    .alphaIsBigger:
       finit
+      fldpi
+      push 2
+      fimul dword [esp]
+      pop eax
       fld qword [mayDestroyGamma]
-      fld qword [dronesNewAlphaInRad]
-      fcomi
-      jb .alphaIsBigger
-      jmp .gammaIsBigger
-      ;adding 2pi to the smaller angle and calc again
-      .alphaIsBigger:
-        finit
-        fldpi
-        push 2
-        fimul dword [esp]
-        pop eax
-        fld qword [mayDestroyGamma]
-        fadd
-        fstp qword [mayDestroyGamma]
-        jmp .computeAgain
-      .gammaIsBigger:
-        finit
-        fldpi
-        push 2
-        fimul dword [esp]
-        pop eax
-        fld qword [mayDestroyAlphaHelper]
-        fadd
-        fstp qword [mayDestroyAlphaHelper]
-      .computeAgain:
-        jmp .calc
-    .coolWithPi:
-    fstp qword [junkHelper]
-    fild dword [beta]
-    fcomi
-    ja .otherCond
-    jmp .retFalse
-    .otherCond:
-    fld qword [ecx]
-    fsub qword [esi]
-    fld qword [ecx]
-    fsub qword [esi]
-    fmulp
-    fld qword [ebx]
-    fsub qword [edx]
-    fld qword [ebx]
-    fsub qword [edx]
-    fmulp
-    ;in st0: (x2-x1)^2, in st1: (y2-y1)^2
-    faddp
-    fsqrt
-    fild dword [d]
-    fcomi
-    ja .retTrue
-    jmp .retFalse
-    .retTrue:
-    mov eax, 1
-    push eax
-    ret
-    .retFalse:
-    mov eax, 0
-    push eax
-    ret
+      fadd
+      fstp qword [mayDestroyGamma]
+      jmp .computeAgain
+    .gammaIsBigger:
+      finit
+      fldpi
+      push 2
+      fimul dword [esp]
+      pop eax
+      fld qword [mayDestroyAlphaHelper]
+      fadd
+      fstp qword [mayDestroyAlphaHelper]
+    .computeAgain:
+      jmp .calc
+  .coolWithPi:
+  fstp qword [junkHelper]
+  fild dword [beta]
+  fcomi
+  ja .otherCond
+  jmp .retFalse
+  .otherCond:
+  fld qword [ecx]
+  fsub qword [esi]
+  fld qword [ecx]
+  fsub qword [esi]
+  fmulp
+  fld qword [ebx]
+  fsub qword [edx]
+  fld qword [ebx]
+  fsub qword [edx]
+  fmulp
+  ;in st0: (x2-x1)^2, in st1: (y2-y1)^2
+  faddp
+  fsqrt
+  fild dword [d]
+  fcomi
+  ja .retTrue
+  jmp .retFalse
+  .retTrue:
+  mov eax, 1
+  push eax
+  ret
+  .retFalse:
+  mov eax, 0
+  push eax
+  ret
