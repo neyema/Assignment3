@@ -3,10 +3,17 @@
 ;save the current state
 global targetDestroyed
 
+section .rodata
+  winnerFormat: db "Drone id %d: I am a winner", 10, 0
+
+section .data
+  idCURR: dd 1  ;1->N
+  steps: dd 0
+  targetDestroyed: db 0  ;boolean, 0 if target have not destroyed, 1 if destroyed
+
 section .text
   align 16
   global scheduler_routine
-  global idCURR
   extern resume
   extern do_resume
   extern CORS
@@ -14,14 +21,11 @@ section .text
   extern K
   extern numofDrones
   extern numofTargets
+  extern dronesDestroyedTargets
   extern printerCO
   extern target_routine
   extern endCo
-;change between sections
-section .data
-  idCURR: dd 1  ;1->N
-  steps: dd 0
-  targetDestroyed: db 0  ;boolean, 0 if target have not destroyed, 1 if destroyed
+  extern printf
 
 scheduler_routine:
   mov byte [targetDestroyed], 0
@@ -40,31 +44,37 @@ first_drone:
   mov dword ebx, [CORS]
   call resume
 ;when back fron drone routine, we'll be in this code
-cmp byte [targetDestroyed], 0
-je after_droneroutine
-;so targetDestroyed=1, need to create target
-mov ebx, target_routine
-call resume
 after_droneroutine:  ;check if need to print the board
   add dword [steps], 1
   mov eax, [steps]
   cmp eax, [K]
   je printBoard
-  jmp check_drone_won
+  jmp check_drone_won  ;no need to print now, jmp right to check
 printBoard:
   mov dword [steps], 0
   mov ebx, printerCO
   call resume
-
-;check if this drone won
 check_drone_won:
-  mov eax, [idCURR]
-  mov ebx, COSZ
-  mul ebx
-  add eax, [CORS] ;eax<-CORS+idCURR*COSZ
-  add eax, 4 ;stack pointer
-  add eax, 12 ;discard x,y,angle
-  mov eax, [eax]
+  cmp byte [targetDestroyed], 0
+  je scheduler_routine
+  ;so targetDestroyed=1, need to check if he won
+  mov eax, [dronesDestroyedTargets]
   cmp dword eax, [numofTargets]
-  jge endCo
-  jmp scheduler_routine
+  jl createTarget  ;the drone not won, but target destryoed
+  ;if we got here, the current drone won
+  pushad
+  pushfd
+  mov dword eax, [idCURR]
+  add eax, 1
+  push dword eax
+  push winnerFormat
+  call printf
+  add esp, 4
+  pop eax
+  popfd
+  popad
+  jmp endCo
+createTarget:
+  mov ebx, target_routine
+  call resume
+  jmp scheduler_routine  ;return address from target routine

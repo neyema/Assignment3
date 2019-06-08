@@ -1,7 +1,5 @@
 global drone_routine
-
-section .rodata
-  winnerFormat: db "Drone id %d: I am a winner", 10, 0
+global dronesDestroyedTargets
 
 section .data
   dronesMayDestroyHelper: dd 0
@@ -200,41 +198,46 @@ drone_routine: ;the code for drone co-routine
   mov byte [targetDestroyed], 1  ;the flag to the scheduler
 
   ;assumes that number of destroyed targets for this drone in eax
-  cmp eax, dword [numofTargets]
-  jge .win
-  push dword [dronesX] ;x
-  push dword [dronesX+4]   ;next part of x
-  push dword [dronesY] ;y
-  push dword [dronesY+4]
-  push dword [dronesAlpha]
-  push dword [dronesAlpha+4]
-  push dword [dronesDestroyedTargets]
-  push dword [dronesId]
-  call target_routine
-  .win:
-    ;wow!!! you won!!!!
-    pushad
-    pushfd
-    push dword [dronesId]
-    push winnerFormat
-    call printf
-    add esp, 4
-    pop eax
-    popfd
-    popad
-    jmp quit
+  ;cmp eax, dword [numofTargets]
+  ;jge .win
   .end:
-  push dword [dronesX] ;x
-  push dword [dronesX+4]   ;next part of x
-  push dword [dronesY] ;y
-  push dword [dronesY+4]
-  push dword [dronesAlpha]
-  push dword [dronesAlpha+4]
-  push dword [dronesDestroyedTargets]
-  push dword [dronesId]
-  mov ebx, schedulerCO
-  call resume
-  jmp drone_routine  ;this is the return address
+    push dword [dronesX] ;x
+    push dword [dronesX+4]   ;next part of x
+    push dword [dronesY] ;y
+    push dword [dronesY+4]
+    push dword [dronesAlpha]
+    push dword [dronesAlpha+4]
+    push dword [dronesDestroyedTargets]
+    push dword [dronesId]
+    ;new code:
+    mov ebx, schedulerCO
+    call resume
+    jmp drone_routine  ;this is the return address
+  ;call target_routine
+  ;.win:
+    ;wow!!! you won!!!!
+    ;pushad
+    ;pushfd
+    ;push dword [dronesId]
+    ;push winnerFormat
+    ;call printf
+    ;add esp, 4
+    ;pop eax
+    ;popfd
+    ;popad
+    ;jmp quit
+  ;.end:
+  ;push dword [dronesX] ;x
+  ;push dword [dronesX+4]   ;next part of x
+  ;push dword [dronesY] ;y
+  ;push dword [dronesY+4]
+  ;push dword [dronesAlpha]
+  ;push dword [dronesAlpha+4]
+  ;push dword [dronesDestroyedTargets]
+  ;push dword [dronesId]
+  ;mov ebx, schedulerCO
+  ;call resume
+  ;jmp drone_routine  ;this is the return address
 
 ;returns dword 0 or 1 in the stack
 mayDestroy:
