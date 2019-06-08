@@ -213,12 +213,15 @@ drone_routine: ;the code for drone co-routine
   call target_routine
   .win:
     ;wow!!! you won!!!!
-    ;assumes that id in eax
-    push eax
+    pushad
+    pushfd
+    push dword [dronesId]
     push winnerFormat
     call printf
     add esp, 4
     pop eax
+    popfd
+    popad
     jmp quit
   .end:
   push dword [dronesX] ;x
