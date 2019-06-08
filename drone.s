@@ -266,7 +266,7 @@ mayDestroy:
     fld qword [mayDestroyGamma]
     fld qword [dronesNewAlphaInRad]
     fcomi
-    jb .alphaIsBigger
+    ja .alphaIsBigger
     jmp .gammaIsBigger
     ;adding 2pi to the smaller angle and calc again
     .alphaIsBigger:
