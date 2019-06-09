@@ -1,6 +1,9 @@
 global drone_routine
 global dronesDestroyedTargets
 
+section .rodata
+  printFloatFormat: db "debdeb: %.2f", 10, 0
+  printRandAng: db "randAng: %.2f", 10, 0
 section .data
   dronesMayDestroyHelper: dd 0
   dronesRandRetHelper: dd 0
@@ -35,18 +38,25 @@ section .text
 drone_routine: ;the code for drone co-routine
   pop dword [dronesId]
   pop dword [dronesDestroyedTargets]
-  pop dword [dronesAlpha]
   pop dword [dronesAlpha+4]
-  pop dword [dronesY]
+  pop dword [dronesAlpha]
   pop dword [dronesY+4]
-  pop dword [dronesX]
+  pop dword [dronesY]
   pop dword [dronesX+4]
+  pop dword [dronesX]
+
+  ;push dword [dronesX + 4]
+  ;push dword [dronesX]
+  ;push printFloatFormat
+  ;call printf
+
   pushad
   pushfd
   call generate_rand
   ;mov dword [dronesRandRetHelper] eax
   popfd
   popad
+  .deb:
   finit
   fild dword [randWord]  ;the angle itself
   push 2147483647   ;max int
@@ -60,6 +70,12 @@ drone_routine: ;the code for drone co-routine
   pop eax
   ;pop value into dronesRandAngleF
   fstp qword [dronesRandAngleF]
+
+  ;push dword [dronesRandAngleF + 4]
+  ;push dword [dronesRandAngleF]
+  ;push printRandAng
+  ;call printf
+
   pushad
   pushfd
   call generate_rand
@@ -276,6 +292,7 @@ mayDestroy:
     jmp .gammaIsBigger
     ;adding 2pi to the smaller angle and calc again
     .alphaIsBigger:
+      ;somehow it's in infinte loop here
       finit
       fldpi
       push 2

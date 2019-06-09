@@ -11,6 +11,7 @@ global randWord
 global resume
 global schedulerCO
 global printerCO
+global printerHelper
 
 global main
 global generate_rand
@@ -47,6 +48,8 @@ section .bss
   targetCO: resb COSZ
 
 section .data
+  xConst: dq 42.9483
+  yConst: dq 12.5437777
   numofDrones: dd 0  ;num of drones
   numofTargets: dd 0  ;num of targets needed to destroy to win
   K: dd 0 ;num of drone steps between broad printing
@@ -55,6 +58,7 @@ section .data
   randWord: dd 0
   CORS: dd 0  ;address to the array of co-routines
   randHelper: dq 0
+  printerHelper: dd 0
 
 section .text
   align 16
@@ -143,8 +147,12 @@ initCORS:
   push 100
   fimul dword [esp]   ;to get [0, 100]
   fstp qword [randHelper]
-  push dword [randHelper]       ;x
-  push dword [randHelper + 4]  ;second part of x
+  pop eax
+  ;push dword [randHelper]       ;x
+  ;push dword [randHelper + 4]  ;second part of x
+  ;TODO: THIS IS FOR TESTING. REMOVE!
+  push dword [xConst]
+  push dword [xConst + 4]
   pushfd
   pushad
   call generate_rand
@@ -157,8 +165,12 @@ initCORS:
   push 100
   fimul dword [esp]   ;to get [0, 100]
   fstp qword [randHelper]
-  push dword [randHelper]       ;y
-  push dword [randHelper + 4]   ;second part of y
+  pop eax
+  ;push dword [randHelper]       ;y
+  ;push dword [randHelper + 4]   ;second part of y
+  ;TODO: THIS IS FOR TESTING. REMOVE!
+  push dword [yConst]
+  push dword [yConst + 4]
   pushfd
   pushad
   call generate_rand
@@ -171,6 +183,7 @@ initCORS:
   push 360
   fimul dword [esp]                ;to get [0, 360]
   fstp qword [randHelper]
+  pop eax
   push dword [randHelper]        ;angle [0,360]
   push dword [randHelper + 4]   ;second part of angle
   push 0      ;number of destoryed targets
@@ -290,4 +303,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-  int 80hs
+  int 0x80
