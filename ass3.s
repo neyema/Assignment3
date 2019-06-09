@@ -277,7 +277,7 @@ next_bit:
   loop next_bit, ecx
   ret
 
-;free all and exit
+;free and exit
 quit:
   pushad
   pushfd
@@ -290,14 +290,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-  int 80h
-  ;these next 3 are not needed maybe
-  ;push dword schedulerCO
-  ;call free
-  ;add esp, 4
-  ;push targetCO
-  ;call free
-  ;add esp, 4
-  ;push printerCO
-  ;call free
-  ;add esp, 4
+  int 80hs
