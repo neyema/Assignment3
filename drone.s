@@ -10,6 +10,8 @@ section .rodata
   printFloatY: db "y: %.2f", 10, 0
   printFloatR: db "r: %.2f", 10, 0
   printRandAng: db "randAng: %.2f", 10, 0
+  printAlpha: db "alphaBeforeShitHappends: %.2f", 10, 0
+
 section .data
   dronesMayDestroyHelper: dd 0
   dronesRandRetHelper: dd 0
@@ -60,6 +62,11 @@ drone_routine: ;the code for drone co-routine
   ;push dword [dronesY + 4]
   ;push dword [dronesY]
   ;push printFloatY
+  ;call printf
+
+  ;push dword [dronesAlpha + 4]
+  ;push dword [dronesAlpha]
+  ;push printAlpha
   ;call printf
 
   pushad
@@ -127,6 +134,7 @@ drone_routine: ;the code for drone co-routine
   fldz    ;loads +0.0
   fcomi     ;cmp [dronesRandAngleF] and 0
   ja .lowerThan0
+  fstp qword [junkHelper]
   jmp .angleIsCool
   .biggerThan360:
     push 360
