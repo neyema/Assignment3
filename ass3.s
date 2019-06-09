@@ -360,8 +360,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-<<<<<<< HEAD
-  int 80h
-=======
   int 0x80
->>>>>>> 8184c852756d486eb305ac7524f87b9609d34065
