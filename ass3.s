@@ -284,8 +284,12 @@ quit:
   push eax  ;in CORS the address to the memory
   call free
   add esp, 4
+quit_break:
   popfd
   popad
+  mov eax, 1
+  mov ebx, 0
+  int 80h
   ;these next 3 are not needed maybe
   ;push dword schedulerCO
   ;call free

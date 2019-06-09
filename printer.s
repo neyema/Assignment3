@@ -36,8 +36,12 @@ printer_routine:
     push dword [eax + 28]   ;x
     push dword [eax + 32]   ;second part of x
     push dword [eax + 4]    ;id
+    pushad
+    pushfd
     push printDroneFormat
     call printf
+    popfd
+    popad
     add ecx, 1
     cmp ecx, dword [numofDrones]
     jl .printDrone
