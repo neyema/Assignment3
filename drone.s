@@ -1,5 +1,9 @@
 global drone_routine
 global dronesDestroyedTargets
+global dronesAlpha
+global dronesX
+global dronesY
+global dronesId
 
 section .data
   dronesMayDestroyHelper: dd 0

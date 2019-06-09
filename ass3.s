@@ -88,6 +88,7 @@ main:
   pushfd
   push eax
   call malloc
+break_check:
   add esp, 4  ;discard push eax
   mov [CORS], eax  ;the pointer returned by malloc
   popfd
@@ -290,4 +291,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-  int 80hs
+  int 80h

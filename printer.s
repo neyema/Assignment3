@@ -14,6 +14,11 @@ section .text:
   extern numofDrones
   extern schedulerCO
   extern resume
+  extern dronesDestroyedTargets
+  extern dronesAlpha
+  extern dronesX
+  extern dronesY
+  extern dronesId
   ;C library functions
   extern printf
 
@@ -30,18 +35,23 @@ printer_routine:
     ;TODO: PROBLEM IN STACK POINTER HERE
     mov eax, COSZ
     mul ecx  ;eax<-ecx*COSZ
-    mov eax, [CORS+eax] ;get pointer to COi (i=ecx) struct
-    add eax, 4        ;eax is the pointer to the stack
-    push dword [eax + 8]    ;dronesDestroyedTargets
-    push dword [eax + 16]   ;second part of alpha
-    push dword [eax + 12]   ;alpha
-    push dword [eax + 24]   ;second part of y
-    push dword [eax + 20]   ;y
-    push dword [eax + 32]   ;second part of x
-    push dword [eax + 28]   ;x
-    push dword [eax + 4]    ;id
-    pushad
+    add eax, [CORS]  ;eax<-the pointer to the routine in CORS
+    mov eax, [eax+4]  ;eax is the value of the stack pointer
+    add dword eax, 4    ;skip return address
+    add dword eax, 32  ;32 bytes size of pushad
+    add dword eax, 4   ;ef flags is 32 bit = 4 bytes
+    pushad  ;these are in the printer stack, so we don't care about them now
     pushfd
+    ;in order to reach the fields, saved in stack
+    ;we need to skip on: retrun address, fd, ad
+    push dword [eax + 4]    ;dronesDestroyedTargets
+    push dword [eax + 8]   ;second part of alpha
+    push dword [eax + 12]   ;alpha
+    push dword [eax + 16]   ;second part of y
+    push dword [eax + 20]   ;y
+    push dword [eax + 24]   ;second part of x
+    push dword [eax + 28]   ;x
+    push dword [eax]    ;id
     push printDroneFormat
     call printf
     popfd
