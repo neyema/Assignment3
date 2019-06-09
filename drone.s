@@ -5,6 +5,11 @@ global dronesX
 global dronesY
 global dronesId
 
+section .rodata
+  printFloatFormat: db "x: %.2f", 10, 0
+  printFloatY: db "y: %.2f", 10, 0
+  printFloatR: db "r: %.2f", 10, 0
+  printRandAng: db "randAng: %.2f", 10, 0
 section .data
   dronesMayDestroyHelper: dd 0
   dronesRandRetHelper: dd 0
@@ -19,6 +24,7 @@ section .data
   mayDestroyAlphaHelper: dq 0.0
   mayDestroyGamma: dq 0
   junkHelper: dq 0.0
+  junkDword: dd 0
 
 section .text
   align 16
@@ -39,21 +45,36 @@ section .text
 drone_routine: ;the code for drone co-routine
   pop dword [dronesId]
   pop dword [dronesDestroyedTargets]
-  pop dword [dronesAlpha]
   pop dword [dronesAlpha+4]
-  pop dword [dronesY]
+  pop dword [dronesAlpha]
   pop dword [dronesY+4]
-  pop dword [dronesX]
+  pop dword [dronesY]
   pop dword [dronesX+4]
+  pop dword [dronesX]
+
+  ;push dword [dronesX + 4]
+  ;push dword [dronesX]
+  ;push printFloatFormat
+  ;call printf
+
+  ;push dword [dronesY + 4]
+  ;push dword [dronesY]
+  ;push printFloatY
+  ;call printf
+
   pushad
   pushfd
   call generate_rand
   ;mov dword [dronesRandRetHelper] eax
   popfd
   popad
+  .deb:
   finit
-  fild dword [randWord]  ;the angle itself
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]  ;the angle itself
+  push 65535   ;max short
   fidiv dword [esp]
   pop eax
   push 120
@@ -64,20 +85,35 @@ drone_routine: ;the code for drone co-routine
   pop eax
   ;pop value into dronesRandAngleF
   fstp qword [dronesRandAngleF]
+
+  ;push dword [dronesRandAngleF + 4]
+  ;push dword [dronesRandAngleF]
+  ;push printRandAng
+  ;call printf
+
   pushad
   pushfd
   call generate_rand
   ;pop dword [dronesRandRetHelper]
   popfd
   popad
-  fild dword [randWord]  ;the angle itself
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]  ;the angle itself
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 50
   fimul dword [esp]          ;to get [0, 50]
   pop eax
   fstp qword [dronesRandDistance]
+
+  ;push dword [dronesRandDistance + 4]
+  ;push dword [dronesRandDistance]
+  ;push printFloatR
+  ;call printf
+
   mov eax, dronesAlpha ;pointer to old alpha is on eax for now
   ;make new alpha in [0,360]
   fld qword [dronesRandAngleF]
@@ -280,6 +316,7 @@ mayDestroy:
     jmp .gammaIsBigger
     ;adding 2pi to the smaller angle and calc again
     .alphaIsBigger:
+      ;somehow it's in infinte loop here
       finit
       fldpi
       push 2
