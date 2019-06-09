@@ -65,7 +65,7 @@ check_drone_won:
   pushad
   pushfd
   mov dword eax, [idCURR]
-  add eax, 1
+  sub eax, 1
   push dword eax
   push winnerFormat
   call printf
