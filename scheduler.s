@@ -31,16 +31,17 @@ scheduler_routine:
   mov byte [targetDestroyed], 0
   mov eax, [numofDrones]
   cmp [idCURR], eax
-  je first_drone
-  add dword [idCURR], 1
+  je first_drone  ;we got to the last drone, back to the first now
   mov eax, COSZ
   mov ebx, [idCURR]
-  mul ebx  ;eax<-idCURR*COSZ
-  add eax, CORS
-  mov ebx, eax
+  add dword [idCURR], 1
+  sub ebx, 1
+  mul ebx  ;eax<-(idCURR-1)*COSZ
+  add ebx, [CORS]
   call resume
   jmp after_droneroutine
 first_drone:
+  mov dword [idCURR], 1
   mov dword ebx, [CORS]
   call resume
 ;when back fron drone routine, we'll be in this code

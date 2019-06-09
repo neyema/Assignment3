@@ -3,8 +3,8 @@ global targetY
 global target_routine
 
 section .data
-  targetX: dq 0     ;TODO: MAKE ZERO!
-  targetY: dq 0    ;TODO: MAKE ZERO!
+  targetX: dq 0
+  targetY: dq 0
   targetRandHelper: dd 0
   junkDword: dd 0
 

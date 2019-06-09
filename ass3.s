@@ -116,7 +116,6 @@ break_check:
   mov dword [targetCO], target_routine
   mov dword [targetCO+4], targetCO+COSZ
   mov [SPT], esp
-  ;TODO: INIT TARGET WITH RAND X,Y
   pushad
   pushfd
   call generate_rand
@@ -360,8 +359,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-<<<<<<< HEAD
-  int 80h
-=======
   int 0x80
->>>>>>> 8184c852756d486eb305ac7524f87b9609d34065
