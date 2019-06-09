@@ -38,6 +38,7 @@ COSZ EQU STKSZ+8  ;private stack and 2 fields: pointer to function, spi
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
   intFormat: db "%d", 0
+  shortFormat: db "%hu", 0
 
 section .bss
   CURR: resd 1
@@ -55,10 +56,11 @@ section .data
   K: dd 0 ;num of drone steps between broad printing
   beta: dd 0  ;the angle of drone field-of-view
   d: dd 0  ;maximum distance that allows to destroy a target
-  randWord: dd 0
+  randWord: dw 0
   CORS: dd 0  ;address to the array of co-routines
   randHelper: dq 0
   printerHelper: dd 0
+  junkDword: dd 0
 
 section .text
   align 16
@@ -66,6 +68,8 @@ section .text
   extern target_routine
   extern scheduler_routine
   extern printer_routine
+  extern targetX
+  extern targetY
   ;C library functions
   extern malloc
   extern sscanf
@@ -82,7 +86,17 @@ main:
   scanCmd K,12
   scanCmd beta,16
   scanCmd d,20
-  scanCmd randWord,24
+  ;scanCmd randWord,24
+  mov ecx, [ebx + 24]  ;ecx<-argv[...] (char*)
+  pushad
+  pushfd
+  push randWord
+  push shortFormat
+  push ecx
+  call sscanf
+  add esp, 12
+  popfd
+  popad
 
   ;allocating size for CORS
   mov eax, [numofDrones]
@@ -102,6 +116,39 @@ main:
   mov dword [targetCO+4], targetCO+COSZ
   mov [SPT], esp
   ;TODO: INIT TARGET WITH RAND X,Y
+  pushad
+  pushfd
+  call generate_rand
+  popfd
+  popad
+  finit
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max short
+  fidiv dword [esp]
+  pop eax
+  push 100
+  fimul dword [esp]   ;to get [0, 100]
+  fstp qword [targetX]
+  pop eax
+  pushad
+  pushfd
+  call generate_rand
+  popfd
+  popad
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max short
+  fidiv dword [esp]
+  pop eax
+  push 100
+  fimul dword [esp]   ;to get [0, 100]
+  fstp qword [targetY]
+  pop eax
   mov esp, [targetCO+4]
   push target_routine
   pushfd
@@ -140,44 +187,53 @@ initCORS:
   popad
   popfd
   finit
-  fild dword [randWord]
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 100
   fimul dword [esp]   ;to get [0, 100]
   fstp qword [randHelper]
   pop eax
-  ;push dword [randHelper]       ;x
-  ;push dword [randHelper + 4]  ;second part of x
+  push dword [randHelper]       ;x
+  push dword [randHelper + 4]  ;second part of x
   ;TODO: THIS IS FOR TESTING. REMOVE!
-  push dword [xConst]
-  push dword [xConst + 4]
+  ;push dword [xConst]
+  ;push dword [xConst + 4]
   pushfd
   pushad
   call generate_rand
   popad
   popfd
-  fild dword [randWord]
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 100
   fimul dword [esp]   ;to get [0, 100]
   fstp qword [randHelper]
   pop eax
-  ;push dword [randHelper]       ;y
-  ;push dword [randHelper + 4]   ;second part of y
+  push dword [randHelper]       ;y
+  push dword [randHelper + 4]   ;second part of y
   ;TODO: THIS IS FOR TESTING. REMOVE!
-  push dword [yConst]
-  push dword [yConst + 4]
+  ;push dword [yConst]
+  ;push dword [yConst + 4]
   pushfd
   pushad
   call generate_rand
   popad
   popfd
-  fild dword [randWord]
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 360

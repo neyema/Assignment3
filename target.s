@@ -3,9 +3,10 @@ global targetY
 global target_routine
 
 section .data
-  targetX: dq 44.654     ;TODO: MAKE ZERO!
-  targetY: dq 87.9136    ;TODO: MAKE ZERO!
+  targetX: dq 0     ;TODO: MAKE ZERO!
+  targetY: dq 0    ;TODO: MAKE ZERO!
   targetRandHelper: dd 0
+  junkDword: dd 0
 
 section .text
   align 16
@@ -22,8 +23,11 @@ target_routine:  ;creating new target
   popad
   popfd
   finit
-  fild dword [randWord]
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 100
@@ -35,8 +39,11 @@ target_routine:  ;creating new target
   ;mov dword [targetRandHelper], eax
   popfd
   popad
-  fild dword [randWord]
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 100

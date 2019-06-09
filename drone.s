@@ -2,7 +2,9 @@ global drone_routine
 global dronesDestroyedTargets
 
 section .rodata
-  printFloatFormat: db "debdeb: %.2f", 10, 0
+  printFloatFormat: db "x: %.2f", 10, 0
+  printFloatY: db "y: %.2f", 10, 0
+  printFloatR: db "r: %.2f", 10, 0
   printRandAng: db "randAng: %.2f", 10, 0
 section .data
   dronesMayDestroyHelper: dd 0
@@ -18,6 +20,7 @@ section .data
   mayDestroyAlphaHelper: dq 0.0
   mayDestroyGamma: dq 0
   junkHelper: dq 0.0
+  junkDword: dd 0
 
 section .text
   align 16
@@ -50,6 +53,11 @@ drone_routine: ;the code for drone co-routine
   ;push printFloatFormat
   ;call printf
 
+  ;push dword [dronesY + 4]
+  ;push dword [dronesY]
+  ;push printFloatY
+  ;call printf
+
   pushad
   pushfd
   call generate_rand
@@ -58,8 +66,11 @@ drone_routine: ;the code for drone co-routine
   popad
   .deb:
   finit
-  fild dword [randWord]  ;the angle itself
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]  ;the angle itself
+  push 65535   ;max short
   fidiv dword [esp]
   pop eax
   push 120
@@ -82,14 +93,23 @@ drone_routine: ;the code for drone co-routine
   ;pop dword [dronesRandRetHelper]
   popfd
   popad
-  fild dword [randWord]  ;the angle itself
-  push 2147483647   ;max int
+  mov eax, 0
+  mov ax, word [randWord]
+  mov dword [junkDword], eax
+  fild dword [junkDword]  ;the angle itself
+  push 65535   ;max int
   fidiv dword [esp]
   pop eax
   push 50
   fimul dword [esp]          ;to get [0, 50]
   pop eax
   fstp qword [dronesRandDistance]
+
+  ;push dword [dronesRandDistance + 4]
+  ;push dword [dronesRandDistance]
+  ;push printFloatR
+  ;call printf
+
   mov eax, dronesAlpha ;pointer to old alpha is on eax for now
   ;make new alpha in [0,360]
   fld qword [dronesRandAngleF]
