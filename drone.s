@@ -64,10 +64,10 @@ drone_routine: ;the code for drone co-routine
   ;push printFloatY
   ;call printf
 
-  push dword [dronesAlpha + 4]
-  push dword [dronesAlpha]
-  push printAlpha
-  call printf
+  ;push dword [dronesAlpha + 4]
+  ;push dword [dronesAlpha]
+  ;push printAlpha
+  ;call printf
 
   pushad
   pushfd
@@ -93,10 +93,10 @@ drone_routine: ;the code for drone co-routine
   ;pop value into dronesRandAngleF
   fstp qword [dronesRandAngleF]
 
-  push dword [dronesRandAngleF + 4]
-  push dword [dronesRandAngleF]
-  push printRandAng
-  call printf
+  ;push dword [dronesRandAngleF + 4]
+  ;push dword [dronesRandAngleF]
+  ;push printRandAng
+  ;call printf
 
   pushad
   pushfd
