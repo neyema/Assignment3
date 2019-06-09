@@ -57,6 +57,9 @@ printer_routine:
     push dword [eax]    ;id
     push printDroneFormat
     call printf
+    add dword esp, 32
+    popfd
+    popad
     ;CHECKING!
     ;mov eax, dword [pointerToStack]
     ;push dword [eax + 4]
