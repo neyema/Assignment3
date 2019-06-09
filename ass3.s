@@ -1,6 +1,3 @@
-;comment !!!!!!!
-
-
 global CORS
 GLOBAL COSZ
 global SPT
@@ -279,19 +276,23 @@ next_bit:
   loop next_bit, ecx
   ret
 
-
 ;free all and exit
 quit:
-  push dword [CORS]  ;in CORS the address to the memory
+  pushad
+  pushfd
+  mov dword eax,  [CORS]
+  push eax  ;in CORS the address to the memory
   call free
   add esp, 4
+  popfd
+  popad
   ;these next 3 are not needed maybe
-  push dword schedulerCO
-  call free
-  add esp, 4
-  push targetCO
-  call free
-  add esp, 4
-  push printerCO
-  call free
-  add esp, 4
+  ;push dword schedulerCO
+  ;call free
+  ;add esp, 4
+  ;push targetCO
+  ;call free
+  ;add esp, 4
+  ;push printerCO
+  ;call free
+  ;add esp, 4
