@@ -3,8 +3,8 @@ global targetY
 global target_routine
 
 section .data
-  targetX: dd 0
-  targetY: dd 0
+  targetX: dq 44.654     ;TODO: MAKE ZERO!
+  targetY: dq 87.9136    ;TODO: MAKE ZERO!
   targetRandHelper: dd 0
 
 section .text

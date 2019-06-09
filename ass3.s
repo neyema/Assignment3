@@ -97,6 +97,7 @@ main:
   mov dword [targetCO], target_routine
   mov dword [targetCO+4], targetCO+COSZ
   mov [SPT], esp
+  ;TODO: INIT TARGET WITH RAND X,Y
   mov esp, [targetCO+4]
   push target_routine
   pushfd
@@ -117,7 +118,7 @@ main:
   mov ecx, 0  ;drone id is 1 to N
 initCORS:
   mov eax, COSZ
-  mul ecx  ;eax<-COSZ*(ecx-1)
+  mul ecx  ;eax<-COSZ*(ecx)
   ;we want in eax the offset in bytes in CORS
   mov ebx, [CORS]
   add ebx, eax  ;get pointer to COi (i=ecx-1) struct
