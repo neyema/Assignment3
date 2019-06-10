@@ -1,11 +1,16 @@
 global printer_routine
 
+section .data
+  loopIndex: dd 0
+
 section .rodata
   printTargetFormat: db "%.2f,%.2f", 10, 0    ;x,y
   printDroneFormat: db "%d,%.2f,%.2f,%.2f,%d", 10, 0  ;id,x,y,alpha,destoyedTargets
   printDecFormat: db "%d,", 0
   printDecWithNewLineFormat: db "%d",10, 0
   printFloatFormat: db "%.2f", 0
+  wentHere: db "went there!", 10, 0
+  wentHere2: db "went there2!", 10, 0
 
 section .text:
   align 16
@@ -26,15 +31,15 @@ section .text:
   extern printf
 
 printer_routine:
-  ;TODO: UNCOMMENT!
   push dword [targetY + 4]
   push dword [targetY]
   push dword [targetX + 4]
   push dword [targetX]
   push printTargetFormat
   call printf
-  mov ecx, 0
+  mov dword [loopIndex], 0
   .printDrone:
+    mov ecx, dword [loopIndex]
     mov eax, COSZ
     mul ecx  ;eax<-ecx*COSZ
     add eax, [CORS]  ;eax<-the pointer to the routine in CORS
@@ -56,12 +61,17 @@ printer_routine:
     push dword [eax]    ;id
     push printDroneFormat
     call printf
-    ;CHECKING!
-    ;mov eax, dword [pointerToStack]
-    ;push dword [eax + 4]
-    ;push printDecWithNewLineFormat
-    ;call printf
-    add ecx, 1
+    ;clean stack!
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    pop dword eax
+    add dword [loopIndex], 1
+    mov ecx, [loopIndex]
     cmp ecx, dword [numofDrones]
     jl .printDrone
   mov ebx, schedulerCO

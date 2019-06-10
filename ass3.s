@@ -75,6 +75,7 @@ section .text
   extern malloc
   extern sscanf
   extern free
+  extern steps
 
 main:
   push ebp
@@ -152,7 +153,6 @@ break_check:
   mov [SPT], esp
   mov esp, [targetCO+4]
   push target_routine
-  debdeb:
   pushfd
   pushad
   mov [targetCO+4], esp

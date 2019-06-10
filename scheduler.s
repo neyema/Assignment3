@@ -2,13 +2,15 @@
 ;ebx<-the pointer to the thread
 ;save the current state
 global targetDestroyed
+global idCURR
+global steps
 
 section .rodata
   winnerFormat: db "Drone id %d: I am a winner", 10, 0
 
 section .data
-  idCURR: dd 1  ;1->N
-  steps: dd 0
+  idCURR: dd 0  ;1->N
+  steps: dd -1  ;it's not really. it starts as k
   targetDestroyed: db 0  ;boolean, 0 if target have not destroyed, 1 if destroyed
 
 section .text
@@ -28,33 +30,52 @@ section .text
   extern endCo
   extern printf
 
+
+
 scheduler_routine:
-  mov byte [targetDestroyed], 0
-  mov eax, [numofDrones]
-  cmp [idCURR], eax
-  je first_drone
-  add dword [idCURR], 1
-  mov eax, COSZ
-  mov ebx, [idCURR]
-  mul ebx  ;eax<-idCURR*COSZ
-  add eax, CORS
-  mov ebx, eax
-  call resume
-  jmp after_droneroutine
-first_drone:
-  mov dword ebx, [CORS]
-  call resume
-;when back fron drone routine, we'll be in this code
-after_droneroutine:  ;check if need to print the board
+  cmp dword [idCURR], 0
+  jne .dontMakeStepsBigger
   add dword [steps], 1
-  mov eax, [steps]
-  cmp eax, [K]
-  je printBoard
-  jmp check_drone_won  ;no need to print now, jmp right to check
-printBoard:
-  mov dword [steps], 0
+  .dontMakeStepsBigger:
+  add dword [idCURR], 1
+  mov eax, dword [idCURR]
+  cmp eax, [numofDrones]
+  jle .doNotMakeOne
+  mov dword [idCURR], 1
+  add dword [steps], 1
+  .doNotMakeOne:
+  cmp dword [idCURR], 1
+  jg .doNotPrint
+  cmp dword [steps], 0
+  je .print
+  mov edx, 0
+  mov eax, 0
+  mov ebx, 0
+  mov ax, [steps]
+  mov bx, [K]
+  div bx ;remainder in DX
+  cmp word dx, 0
+  jne .doNotPrint
+  .print:
   mov ebx, printerCO
   call resume
+  .doNotPrint:
+  cmp dword [idCURR], 2
+  je .itsTwo
+  jmp .notTwo
+  .itsTwo:
+  nop
+  .notTwo:
+  mov byte [targetDestroyed], 0
+  mov eax, [numofDrones]
+  mov ecx, dword [idCURR]
+  sub ecx, 1
+  mov eax, COSZ
+  mul ecx  ;eax<-ecx*COSZ
+  add eax, [CORS]  ;eax<-the pointer to the routine in CORS
+  mov ebx, eax
+  call resume
+;when back fron drone routine, we'll be in this code
 check_drone_won:
   cmp byte [targetDestroyed], 0
   je scheduler_routine
