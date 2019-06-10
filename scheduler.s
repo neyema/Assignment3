@@ -24,6 +24,7 @@ section .text
   extern dronesDestroyedTargets
   extern printerCO
   extern target_routine
+  extern targetCO
   extern endCo
   extern printf
 
@@ -31,17 +32,16 @@ scheduler_routine:
   mov byte [targetDestroyed], 0
   mov eax, [numofDrones]
   cmp [idCURR], eax
-  je first_drone  ;we got to the last drone, back to the first now
+  je first_drone
+  add dword [idCURR], 1
   mov eax, COSZ
   mov ebx, [idCURR]
-  add dword [idCURR], 1
-  sub ebx, 1
-  mul ebx  ;eax<-(idCURR-1)*COSZ
-  add ebx, [CORS]
+  mul ebx  ;eax<-idCURR*COSZ
+  add eax, CORS
+  mov ebx, eax
   call resume
   jmp after_droneroutine
 first_drone:
-  mov dword [idCURR], 1
   mov dword ebx, [CORS]
   call resume
 ;when back fron drone routine, we'll be in this code
@@ -76,6 +76,6 @@ check_drone_won:
   popad
   jmp endCo
 createTarget:
-  mov ebx, target_routine
+  mov ebx, targetCO
   call resume
-  jmp scheduler_routine  ;return address from target routine
+jmp scheduler_routine ;return address from target routine

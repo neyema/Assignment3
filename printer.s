@@ -35,7 +35,6 @@ printer_routine:
   call printf
   mov ecx, 0
   .printDrone:
-    ;TODO: PROBLEM IN STACK POINTER HERE
     mov eax, COSZ
     mul ecx  ;eax<-ecx*COSZ
     add eax, [CORS]  ;eax<-the pointer to the routine in CORS
@@ -57,9 +56,6 @@ printer_routine:
     push dword [eax]    ;id
     push printDroneFormat
     call printf
-    add dword esp, 32
-    popfd
-    popad
     ;CHECKING!
     ;mov eax, dword [pointerToStack]
     ;push dword [eax + 4]
@@ -70,4 +66,4 @@ printer_routine:
     jl .printDrone
   mov ebx, schedulerCO
   call resume
-  jmp printer_routine
+jmp printer_routine

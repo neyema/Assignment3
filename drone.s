@@ -249,6 +249,11 @@ drone_routine: ;the code for drone co-routine
   ;cmp eax, dword [numofTargets]
   ;jge .win
   .end:
+    fstp qword [junkHelper]
+    fstp qword [junkHelper]
+    fstp qword [junkHelper]
+    fstp qword [junkHelper]
+
     push dword [dronesX] ;x
     push dword [dronesX+4]   ;next part of x
     push dword [dronesY] ;y
@@ -374,4 +379,4 @@ mayDestroy:
   ret
   .retFalse:
   mov eax, 0
-  ret
+ret

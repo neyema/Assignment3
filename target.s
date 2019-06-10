@@ -3,8 +3,8 @@ global targetY
 global target_routine
 
 section .data
-  targetX: dq 0
-  targetY: dq 0
+  targetX: dq 0     ;TODO: MAKE ZERO!
+  targetY: dq 0    ;TODO: MAKE ZERO!
   targetRandHelper: dd 0
   junkDword: dd 0
 
@@ -49,5 +49,7 @@ target_routine:  ;creating new target
   push 100
   fimul dword [esp]  ;to get [0, 100]
   fstp qword [targetY]
-  mov ebx, [schedulerCO]
-  call resume
+  .debRot:
+  mov ebx, schedulerCO
+call resume
+jmp target_routine

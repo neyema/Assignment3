@@ -12,6 +12,7 @@ global resume
 global schedulerCO
 global printerCO
 global printerHelper
+global targetCO
 
 global main
 global generate_rand
@@ -115,7 +116,6 @@ break_check:
   ;init Target
   mov dword [targetCO], target_routine
   mov dword [targetCO+4], targetCO+COSZ
-  mov [SPT], esp
   pushad
   pushfd
   call generate_rand
@@ -149,8 +149,10 @@ break_check:
   fimul dword [esp]   ;to get [0, 100]
   fstp qword [targetY]
   pop eax
+  mov [SPT], esp
   mov esp, [targetCO+4]
   push target_routine
+  debdeb:
   pushfd
   pushad
   mov [targetCO+4], esp
@@ -283,8 +285,33 @@ endCo:
   ;the inveriant that helps the resume-do_resume method is:
   ;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
   ;return address can be to the line 'jmp drone_routine'
+;resume: ;save state of current co-routine
+  ;push dword [ebx]  ;pointer to function
+  ;[CURR] SHOULD POINT TO THE STRUCT OF THE ROUTINE
+;  pushfd
+;  pushad
+;  mov edx, [CURR]
+;  mov dword [edx+4], ESP  ;save current ESP
+
+;do_resume: ;load ESP for resumed co-routine;
+;  mov dword esp, [ebx+4]
+;  mov [CURR], ebx
+;  popad ;restore resumed co-routine state
+;  popfd
+;  ret  ;"return" to resumed co-routine
+  ;this will pop the address to the function and jmp there
+
+  ;the inveriant that helps the resume-do_resume method is:
+  ;in every private stack of co-routine the top contains (from top): fd, ad, return address in that routine
+  ;return address can be to the line 'jmp drone_routine'
+
+
+  ;pointer to STRUCT OF CO-ROUTINE IS IN EBX
 resume: ;save state of current co-routine
   ;push dword [ebx]  ;pointer to function
+  ;[CURR] SHOULD POINT TO THE STRUCT OF THE ROUTINE
+  ;mov edx, [CURR]
+  ;push dword [edx]      ;push the ret address
   pushfd
   pushad
   mov edx, [CURR]
@@ -359,4 +386,4 @@ quit_break:
   popad
   mov eax, 1
   mov ebx, 0
-  int 0x80
+int 0x80
